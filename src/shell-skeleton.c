@@ -88,7 +88,7 @@ int show_prompt() {
 	char cwd[1024], hostname[1024];
 	gethostname(hostname, sizeof(hostname));
 	getcwd(cwd, sizeof(cwd));
-	printf("%s@%s:%s %s$ ", getenv("USER"), hostname, cwd, sysname);
+	printf("%s@%s:%s %s ~> ", getenv("USER"), hostname, cwd, sysname);
 	return 0;
 }
 
@@ -377,6 +377,48 @@ int main() {
 	printf("\n");
 	return 0;
 }
+char* getBinPath(char* commandName){
+    char* PATHcpy;
+    char* PATHTok;
+    char** PATHArr;
+    PATHcpy =  strdup(getenv("PATH"));
+    PATHArr = (char **)malloc(200 * sizeof(char* ));
+    PATHTok = strtok(PATHcpy, ":");
+    int i = 0;
+    while( PATHTok != NULL ) {
+
+       PATHArr[i] = PATHTok;
+
+       i++;
+
+       PATHTok = strtok(NULL, ":");
+    }
+    PATHArr[i+1] = NULL;
+
+
+    i = 0;
+    char* path;
+    while(PATHArr[i] != NULL){
+
+
+        char* buffer = (char*)calloc(strlen(PATHArr[i]) + strlen(commandName) + 2, 1);
+
+        sprintf(buffer, "%s/%s", PATHArr[i], commandName);
+
+        if ( !access(buffer, X_OK) ) {
+            path = buffer;
+            break;
+        }
+
+        free(buffer);
+        i++;
+    }
+
+    free(PATHcpy);
+    free(PATHTok);
+    free(PATHArr);
+    return path;
+}
 
 int process_command(struct command_t *command) {
 	int r;
@@ -414,7 +456,20 @@ int process_command(struct command_t *command) {
 
 		// TODO: do your own exec with path resolving using execv()
 		// do so by replacing the execvp call below
-		execvp(command->name, command->args); // exec+args+path
+        char* path = getBinPath(command->name);
+        if (path != NULL){
+            char* args[command->arg_count + 2];
+            args[0] = path;
+            int i;
+            for(i = 1; i < command->arg_count ; i++){
+                args[i] = command->args[i];
+            }
+            args[i + 1] = NULL;
+
+            execv(path, args);
+
+        }
+		/* execvp(command->name, command->args); // exec+args+path */
 		exit(0);
 	} else {
 		// TODO: implement background processes here

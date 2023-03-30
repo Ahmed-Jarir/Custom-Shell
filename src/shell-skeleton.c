@@ -87,7 +87,7 @@ int free_command(struct command_t *command) {
 int show_prompt() {
 	char cwd[1024], hostname[1024];
 	gethostname(hostname, sizeof(hostname));
-	getcwd(cwd, sizeof(cwd));
+    getcwd(cwd, sizeof(cwd));
 	printf("%s@%s:%s %s ~> ", getenv("USER"), hostname, cwd, sysname);
 	return 0;
 }
@@ -397,9 +397,8 @@ char* getBinPath(char* commandName){
 
 
     i = 0;
-    char* path;
+    char* path = NULL;
     while(PATHArr[i] != NULL){
-
 
         char* buffer = (char*)calloc(strlen(PATHArr[i]) + strlen(commandName) + 2, 1);
 
@@ -433,7 +432,7 @@ int process_command(struct command_t *command) {
 
 	if (strcmp(command->name, "cd") == 0) {
 		if (command->arg_count > 0) {
-			r = chdir(command->args[0]);
+			r = chdir(command->args[1]);
 			if (r == -1) {
 				printf("-%s: %s: %s\n", sysname, command->name,
 					   strerror(errno));
@@ -456,6 +455,15 @@ int process_command(struct command_t *command) {
 
 		// TODO: do your own exec with path resolving using execv()
 		// do so by replacing the execvp call below
+
+        // to test `command &` using ls
+        /* if(!strcmp(command->name,"ls")) { */
+        /*     sleep(200); */
+        /* } */
+
+        /* if (!command->background){ */
+
+        /* } */
         char* path = getBinPath(command->name);
         if (path != NULL){
             char* args[command->arg_count + 2];
@@ -473,7 +481,12 @@ int process_command(struct command_t *command) {
 		exit(0);
 	} else {
 		// TODO: implement background processes here
-		wait(0); // wait for child process to finish
+        if (command->background){
+            kill(pid, SIGTSTP);
+            kill(pid, SIGCONT);
+        } else {
+		    wait(0); // wait for child process to finish
+        }
 		return SUCCESS;
 	}
 

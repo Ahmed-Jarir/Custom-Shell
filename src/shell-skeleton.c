@@ -6,6 +6,7 @@
 #include <sys/wait.h>
 #include <termios.h> // termios, TCSANOW, ECHO, ICANON
 #include <unistd.h>
+#include <fcntl.h>
 const char *sysname = "mishell";
 
 enum return_codes {
@@ -441,7 +442,23 @@ int process_command(struct command_t *command) {
 			return SUCCESS;
 		}
 	}
+    int fileDesc = -1;
+    int stdoutCpy = dup(1);
+    /* if (command->redirects[0]){ */
 
+    /* } */
+    if (command->redirects[1]) {
+
+        fileDesc = open(command->redirects[1], O_WRONLY | O_CREAT | O_TRUNC, 0777);
+        if(fileDesc < 0) printf("error opening the file\n");
+        dup2(fileDesc, 1);
+
+
+    } else if (command->redirects[2]) {
+        fileDesc = open(command->redirects[2], O_WRONLY | O_CREAT | O_APPEND, 0777);
+        if(fileDesc < 0) printf("error opening the file\n");
+        dup2(fileDesc, 1);
+    }
 	pid_t pid = fork();
 	// child
 	if (pid == 0) {
@@ -481,13 +498,14 @@ int process_command(struct command_t *command) {
 		exit(0);
 	} else {
 		// TODO: implement background processes here
-        if (command->background){
-            kill(pid, SIGTSTP);
-            kill(pid, SIGCONT);
-        } else {
-		    wait(0); // wait for child process to finish
+        if (!command->background){
+	 	    wait(0); // wait for child process to finish
         }
-		return SUCCESS;
+        if(fileDesc > 0) {
+            close(fileDesc);
+            dup2(stdoutCpy, 1);
+        }
+        return SUCCESS;
 	}
 
 	// TODO: your implementation here

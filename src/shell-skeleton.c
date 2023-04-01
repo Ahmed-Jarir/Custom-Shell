@@ -6,7 +6,6 @@
 #include <sys/wait.h>
 #include <termios.h> // termios, TCSANOW, ECHO, ICANON
 #include <unistd.h>
-#include <fcntl.h>
 const char *sysname = "mishell";
 
 enum return_codes {
@@ -52,6 +51,7 @@ void print_command(struct command_t *command) {
 		printf("\tPiped to:\n");
 		print_command(command->next);
 	}
+    printf("\tArgCount: %d\n", command->arg_count);
 }
 
 /**
@@ -394,7 +394,7 @@ char* getBinPath(char* commandName){
 
        PATHTok = strtok(NULL, ":");
     }
-    PATHArr[i+1] = NULL;
+    /* PATHArr[i+1] = NULL; */
 
 
     i = 0;
@@ -443,21 +443,17 @@ int process_command(struct command_t *command) {
 		}
 	}
     int fileDesc = -1;
-    int stdoutCpy = dup(1);
-    /* if (command->redirects[0]){ */
-
-    /* } */
-    if (command->redirects[1]) {
-
-        fileDesc = open(command->redirects[1], O_WRONLY | O_CREAT | O_TRUNC, 0777);
-        if(fileDesc < 0) printf("error opening the file\n");
-        dup2(fileDesc, 1);
-
-
-    } else if (command->redirects[2]) {
-        fileDesc = open(command->redirects[2], O_WRONLY | O_CREAT | O_APPEND, 0777);
-        if(fileDesc < 0) printf("error opening the file\n");
-        dup2(fileDesc, 1);
+    int stdoutCpy = dup(STDOUT_FILENO);
+    int stdinCpy = dup(STDIN_FILENO);
+    FILE *fil;
+    char* flags[3] = {"r", "w", "a"};
+    for (int i = 0; i < 3; i++) {
+        if (command->redirects[i]){
+            fil = fopen(command->redirects[i], flags[i]);
+            fileDesc = fileno(fil);
+            if(fileDesc < 0) printf("error opening the file\n");
+            dup2(fileDesc, i == 0 ? STDIN_FILENO : STDOUT_FILENO);
+        }
     }
 	pid_t pid = fork();
 	// child
@@ -478,9 +474,6 @@ int process_command(struct command_t *command) {
         /*     sleep(200); */
         /* } */
 
-        /* if (!command->background){ */
-
-        /* } */
         char* path = getBinPath(command->name);
         if (path != NULL){
             char* args[command->arg_count + 2];
@@ -498,13 +491,13 @@ int process_command(struct command_t *command) {
 		exit(0);
 	} else {
 		// TODO: implement background processes here
-        if (!command->background){
-	 	    wait(0); // wait for child process to finish
-        }
+        if (!command->background) wait(0); // wait for child process to finish
         if(fileDesc > 0) {
-            close(fileDesc);
+            close(fileDesc); 
             dup2(stdoutCpy, 1);
+            dup2(stdinCpy, 1);
         }
+
         return SUCCESS;
 	}
 

@@ -345,7 +345,7 @@ int prompt(struct command_t *command) {
 
 	parse_command(buf, command);
 
-	// print_command(command); // DEBUG: uncomment for debugging
+	/* print_command(command); // DEBUG: uncomment for debugging */
 
 	// restore the old settings
 	tcsetattr(STDIN_FILENO, TCSANOW, &backup_termios);
@@ -379,13 +379,33 @@ int main() {
 	return 0;
 }
 char* getBinPath(char* commandName){
+    char* path = NULL;
+    char cwd[1024];
+    char** PATHArr;
     char* PATHcpy;
     char* PATHTok;
-    char** PATHArr;
+    char* buffer;
+    int i = 0;
+
     PATHcpy =  strdup(getenv("PATH"));
     PATHArr = (char **)malloc(200 * sizeof(char* ));
+    if ( !access(commandName, X_OK) ) {
+        path = commandName;
+        goto FREE;
+    }
+
+    if (getcwd(cwd, sizeof(cwd)) != NULL) {
+        buffer = (char*)calloc(strlen(cwd) + strlen(commandName) + 2, 1);
+
+        sprintf(buffer, "%s/%s", cwd, commandName);
+        if ( !access(buffer, X_OK) ) {
+            path = buffer;
+            goto FREE;
+        }
+    }
+
     PATHTok = strtok(PATHcpy, ":");
-    int i = 0;
+
     while( PATHTok != NULL ) {
 
        PATHArr[i] = PATHTok;
@@ -394,29 +414,27 @@ char* getBinPath(char* commandName){
 
        PATHTok = strtok(NULL, ":");
     }
-    /* PATHArr[i+1] = NULL; */
-
 
     i = 0;
-    char* path = NULL;
     while(PATHArr[i] != NULL){
 
-        char* buffer = (char*)calloc(strlen(PATHArr[i]) + strlen(commandName) + 2, 1);
+        buffer = (char*)calloc(strlen(PATHArr[i]) + strlen(commandName) + 2, 1);
 
         sprintf(buffer, "%s/%s", PATHArr[i], commandName);
 
         if ( !access(buffer, X_OK) ) {
             path = buffer;
-            break;
+            goto FREE;
         }
 
         free(buffer);
         i++;
     }
 
-    free(PATHcpy);
-    free(PATHTok);
-    free(PATHArr);
+    FREE:   
+        free(PATHcpy);
+        free(PATHTok);
+        free(PATHArr);
     return path;
 }
 
@@ -433,20 +451,77 @@ int process_command(struct command_t *command) {
 
 	if (strcmp(command->name, "cd") == 0) {
 		if (command->arg_count > 0) {
+            char pwd[1024];
+            getcwd(pwd, sizeof(pwd));
 			r = chdir(command->args[1]);
 			if (r == -1) {
 				printf("-%s: %s: %s\n", sysname, command->name,
 					   strerror(errno));
-			}
+			} 
+            else {
+                char cdh[100];
+                sprintf(cdh, "%s/.cd_history", getenv("HOME"));
+                FILE *cdhf = fopen(cdh, "a+");
+                fprintf(cdhf, "%s\n", pwd);
+                fclose(cdhf);
+            }
 
 			return SUCCESS;
 		}
 	}
+
+	if (!strcmp(command->name, "cdh")) {
+        // TODO: implement the top 10 limit and remove duplicate directories
+        char cdh[100];
+        char* listOfDirs[10];
+        char letters = 'a';
+        char buff[1000];
+
+        sprintf(cdh, "%s/.cd_history", getenv("HOME"));
+        if (!access(cdh, F_OK)){
+            FILE* cdhf = fopen(cdh, "a+");
+            int i = 1;
+            while(fgets(buff, 1000 - 1, cdhf) != NULL) {
+                buff[strcspn(buff, "\n")] = 0;
+                printf("%c %d) %s\n", letters++, i, buff);
+                listOfDirs[i - 1] = strdup(buff);
+                i++;
+            }
+            char inputChar;
+            int inputIdx;
+            printf("Select directory by letter or number: ");
+            if (scanf("%c", &inputChar) == -1){
+                printf("scan faild");
+            }
+
+            inputChar = inputChar > 96 ? inputChar - 49 : inputChar - 1;
+            inputIdx = atoi(&inputChar);
+			r = chdir(listOfDirs[inputIdx]);
+			if (r == -1) {
+				printf("-%s: %s: %s\n", sysname, command->name,
+					   strerror(errno));
+			} 
+            return SUCCESS;
+
+        }
+    }
+	if (!strcmp(command->name, "roll")) {
+        // TODO
+        return SUCCESS;
+
+    }
+	if (!strcmp(command->name, "cloc")) {
+        // TODO
+        return SUCCESS;
+
+    }
+
     int fileDesc = -1;
     int stdoutCpy = dup(STDOUT_FILENO);
     int stdinCpy = dup(STDIN_FILENO);
     FILE *fil;
     char* flags[3] = {"r", "w", "a"};
+    // TODO: fix the redirect to stdin
     for (int i = 0; i < 3; i++) {
         if (command->redirects[i]){
             fil = fopen(command->redirects[i], flags[i]);
@@ -491,6 +566,7 @@ int process_command(struct command_t *command) {
 		exit(0);
 	} else {
 		// TODO: implement background processes here
+        // TODO: fix what happens after a process is put to the background
         if (!command->background) wait(0); // wait for child process to finish
         if(fileDesc > 0) {
             close(fileDesc); 

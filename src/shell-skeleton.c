@@ -379,6 +379,7 @@ int main() {
 	return 0;
 }
 char* getBinPath(char* commandName){
+    // add comments
     char* path = NULL;
     char cwd[1024];
     char** PATHArr;
@@ -450,6 +451,7 @@ int process_command(struct command_t *command) {
 	}
 
 	if (strcmp(command->name, "cd") == 0) {
+        // add comments
 		if (command->arg_count > 0) {
             char pwd[1024];
             getcwd(pwd, sizeof(pwd));
@@ -472,6 +474,7 @@ int process_command(struct command_t *command) {
 
 	if (!strcmp(command->name, "cdh")) {
         // TODO: implement the top 10 limit and remove duplicate directories
+        // add comments
         char cdh[100];
         char* listOfDirs[10];
         char letters = 'a';
@@ -506,7 +509,42 @@ int process_command(struct command_t *command) {
         }
     }
 	if (!strcmp(command->name, "roll")) {
-        // TODO
+        // add comments
+        char* argTok;
+
+        argTok = strtok(command->args[1], "d");
+
+        int numberOfRolls;
+        int maxOut;
+
+        int args[2] = {0, 0};
+        int i = 0;
+        while( argTok != NULL  && i < 2) {
+            args[i] = atoi(argTok);
+
+            i++;
+            argTok = strtok(NULL, "d");
+        }
+
+        numberOfRolls = i < 2 ? 1 : args[0];
+        maxOut = args[i == 1?  0 : 1] + 1;
+
+        char *printRolls = malloc(numberOfRolls * 3);
+        int rollOut[numberOfRolls];
+        int sum = 0;
+        for (int j = 0; j < numberOfRolls; j++){
+
+            rollOut[j] = rand() % maxOut;
+            j == 0 ? sprintf(printRolls, "%d", rollOut[j]) :sprintf(printRolls, "%s + %d", strdup(printRolls), rollOut[j]);
+            sum += rollOut[j];
+
+        }
+        if(numberOfRolls == 1)
+        {
+            printf("Rolled %d\n", sum);
+        }else {
+            printf("Rolled %d (%s)\n", sum, printRolls);
+        }
         return SUCCESS;
 
     }
@@ -548,6 +586,7 @@ int process_command(struct command_t *command) {
         /* if(!strcmp(command->name,"ls")) { */
         /*     sleep(200); */
         /* } */
+        // add comments
 
         char* path = getBinPath(command->name);
         if (path != NULL){

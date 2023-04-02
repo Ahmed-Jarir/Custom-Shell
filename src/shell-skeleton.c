@@ -440,22 +440,40 @@ char* getBinPath(char* commandName){
         free(PATHArr);
     return path;
 }
-void countLines(int* files, int* blank, int* comment, int* code, char* file){
+void countLines(int* blank, int* comment, int* code, const char* langComment, char* file){
+    // TODO: add comments
     char line[300];
     FILE *f = fopen(file, "r");
     while(fgets(line, 300, f)) {
-            int i = 0;
-            int len = strlen(line);
-            (*blank)++;
-            for (i = 0; i < len; i++) {
-                if (line[i] != '\n' && line[i] != '\t' && line[i] != ' ') {
-                    (*blank)--;
-                    break;
-                }
-            }
+        regex_t checkBlank;
+        int matchBlank = regcomp( &checkBlank, "^[[:space:]]*$", 0);;
+        matchBlank = regexec(&checkBlank, line, 0, NULL, 0);
+        
+
+        regex_t checkComment;
+        char patternComment[10];
+        int matchCmnt = -1;
+        if(langComment){
+            sprintf(patternComment, "^\\s*%s.*$", langComment);
+            matchCmnt = regcomp( &checkComment, patternComment, 0);
+            matchCmnt = regexec(&checkComment, line, 0, NULL, 0);
         }
+
+
+        if(!matchCmnt){
+            (*comment)++;
+        } 
+        else if (!matchBlank){
+            (*blank)++;
+        } else {
+            (*code)++;
+        }
+    }
 }
 void printCloc (int numberOfFilesProcessed, int numberOfFilesIgnored, int numberOfFilesFound,const char* langs[], int files[], int blank[], int code[], int comments[], int sum[]){
+
+    // prints the results
+
     printf("\t%d text files.\n", numberOfFilesFound);
     printf("\t%d unique files.\n", numberOfFilesProcessed);
     printf("\t%d files ignored.\n", numberOfFilesIgnored);
@@ -470,23 +488,27 @@ void printCloc (int numberOfFilesProcessed, int numberOfFilesIgnored, int number
 
 
 }
-void listFiles(const char *path)
+#define NUMOFLANGS 4
+
+void handleFiles(char* path)
 {
-    const int numberOfLangs = 4;
     regex_t regex;
     struct dirent *files;
-    DIR *dir = opendir(".");
+    DIR *dir = opendir(path);
+
     int numberOfFilesProcessed = 0;
     int numberOfFilesIgnored = 0;
     int numberOfFilesFound;
-    const char* langs[4] = {"C","C++", "Python", "Text"};
-    const char* langExtensions[3] = {".c",".cpp", ".py"};
-    const char* langComment[3] = {"//","//", "#"};
-    int langFils[4] = {0, 0, 0, 0};
-    int langBlnk[4] = {0, 0, 0, 0};
-    int langCmnt[4] = {0, 0, 0, 0};
-    int langCode[4] = {0, 0, 0, 0};
-    int totalSum[4] = {0, 0, 0, 0};
+
+    const char* langs[NUMOFLANGS] = {"C","C++", "Python", "Text"};
+    const char* langExtensions[NUMOFLANGS - 1] = {".c",".cpp", ".py"};
+    const char* langComment[NUMOFLANGS] = {"//", "//", "#", NULL};
+
+    int langFils[NUMOFLANGS] = {0, 0, 0, 0};
+    int langBlnk[NUMOFLANGS] = {0, 0, 0, 0};
+    int langCmnt[NUMOFLANGS] = {0, 0, 0, 0};
+    int langCode[NUMOFLANGS] = {0, 0, 0, 0};
+    int totalSum[NUMOFLANGS] = {0, 0, 0, 0};
 
     if (dir == NULL){
        printf("Directory cannot be opened!" );
@@ -495,24 +517,35 @@ void listFiles(const char *path)
     int match = regcomp( &regex, ".\\..", 0);;
     while ((files = readdir(dir)) != NULL){
 
+        if(!strcmp(files->d_name, ".")||!strcmp(files->d_name, "..")) continue;
         match = regexec( &regex, files->d_name, 0, NULL, 0);
         if(!match){
-            int i = 3;
+            int i = NUMOFLANGS - 1;
+
             char *extension = strrchr(files->d_name, '.');
-            for(int j = 0; j < numberOfLangs - 1; j++) {
+            for(int j = 0; j < NUMOFLANGS - 1; j++) {
                 if(!strcmp(extension, langExtensions[j])) {
                     i = j;
                     break;
                 }
             }
-            countLines(&langFils[i], &langBlnk[i], &langCmnt[i], &langCode[i], files->d_name);
+            langFils[i]++;
+            char* filePath = malloc(strlen(path) + strlen(files->d_name) + 2);
+            sprintf(filePath, "%s/%s", path, files->d_name);
+            countLines(&langBlnk[i], &langCmnt[i], &langCode[i], langComment[i], filePath);
             numberOfFilesProcessed++;
         } else {
             numberOfFilesIgnored++;
         }
     }
     numberOfFilesFound = numberOfFilesProcessed + numberOfFilesIgnored;
-    printCloc(numberOfFilesProcessed, numberOfFilesIgnored, numberOfFilesFound, langs, langFils, langBlnk, langCmnt, langCode, totalSum);
+    for(int i = 0; i < NUMOFLANGS; i++) {
+        totalSum[0] += langFils[i];
+        totalSum[1] += langBlnk[i];
+        totalSum[2] += langCmnt[i];
+        totalSum[3] += langCode[i];
+    }
+    printCloc(numberOfFilesProcessed, numberOfFilesIgnored, numberOfFilesFound, langs, langFils, langBlnk, langCode, langCmnt, totalSum);
     closedir(dir);
 }
 
@@ -582,7 +615,6 @@ int process_command(struct command_t *command) {
 					   strerror(errno));
 			} 
             return SUCCESS;
-
         }
     }
 	if (!strcmp(command->name, "roll")) {
@@ -626,9 +658,16 @@ int process_command(struct command_t *command) {
 
     }
 	if (!strcmp(command->name, "cloc")) {
-        // TODO
         char buff[100];
-        listFiles(getcwd(buff, sizeof(buff)));
+        getcwd(buff, sizeof(buff));
+        char* arg = command->args[1];
+        if(!arg){
+            arg = ".";
+        }
+
+        char *path = malloc(strlen(buff) + strlen(arg) + 2);
+        sprintf(path, "%s/%s", buff, arg);
+        handleFiles(path);
         return SUCCESS;
 
     }

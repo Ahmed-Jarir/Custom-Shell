@@ -6,6 +6,8 @@
 #include <sys/wait.h>
 #include <termios.h> // termios, TCSANOW, ECHO, ICANON
 #include <unistd.h>
+#include <dirent.h>
+#include <regex.h>
 const char *sysname = "mishell";
 
 enum return_codes {
@@ -438,6 +440,81 @@ char* getBinPath(char* commandName){
         free(PATHArr);
     return path;
 }
+void countLines(int* files, int* blank, int* comment, int* code, char* file){
+    char line[300];
+    FILE *f = fopen(file, "r");
+    while(fgets(line, 300, f)) {
+            int i = 0;
+            int len = strlen(line);
+            (*blank)++;
+            for (i = 0; i < len; i++) {
+                if (line[i] != '\n' && line[i] != '\t' && line[i] != ' ') {
+                    (*blank)--;
+                    break;
+                }
+            }
+        }
+}
+void printCloc (int numberOfFilesProcessed, int numberOfFilesIgnored, int numberOfFilesFound,const char* langs[], int files[], int blank[], int code[], int comments[], int sum[]){
+    printf("\t%d text files.\n", numberOfFilesFound);
+    printf("\t%d unique files.\n", numberOfFilesProcessed);
+    printf("\t%d files ignored.\n", numberOfFilesIgnored);
+    printf("-------------------------------------------------\n");
+    printf("%-20s%-8s%-8s%-8s%-8s\n", "Language", "files", "blank", "comment", "code");
+    for(int i = 0; i < 4; i++){
+        printf("%-20s%-8d%-8d%-8d%-8d\n", langs[i], files[i], blank[i], comments[i], code[i]);
+    }
+    printf("-------------------------------------------------\n");
+    printf("%-20s%-8d%-8d%-8d%-8d\n", "SUM:", sum[0], sum[1], sum[2], sum[3]);
+    printf("-------------------------------------------------\n");
+
+
+}
+void listFiles(const char *path)
+{
+    const int numberOfLangs = 4;
+    regex_t regex;
+    struct dirent *files;
+    DIR *dir = opendir(".");
+    int numberOfFilesProcessed = 0;
+    int numberOfFilesIgnored = 0;
+    int numberOfFilesFound;
+    const char* langs[4] = {"C","C++", "Python", "Text"};
+    const char* langExtensions[3] = {".c",".cpp", ".py"};
+    const char* langComment[3] = {"//","//", "#"};
+    int langFils[4] = {0, 0, 0, 0};
+    int langBlnk[4] = {0, 0, 0, 0};
+    int langCmnt[4] = {0, 0, 0, 0};
+    int langCode[4] = {0, 0, 0, 0};
+    int totalSum[4] = {0, 0, 0, 0};
+
+    if (dir == NULL){
+       printf("Directory cannot be opened!" );
+       return;
+    }
+    int match = regcomp( &regex, ".\\..", 0);;
+    while ((files = readdir(dir)) != NULL){
+
+        match = regexec( &regex, files->d_name, 0, NULL, 0);
+        if(!match){
+            int i = 3;
+            char *extension = strrchr(files->d_name, '.');
+            for(int j = 0; j < numberOfLangs - 1; j++) {
+                if(!strcmp(extension, langExtensions[j])) {
+                    i = j;
+                    break;
+                }
+            }
+            countLines(&langFils[i], &langBlnk[i], &langCmnt[i], &langCode[i], files->d_name);
+            numberOfFilesProcessed++;
+        } else {
+            numberOfFilesIgnored++;
+        }
+    }
+    numberOfFilesFound = numberOfFilesProcessed + numberOfFilesIgnored;
+    printCloc(numberOfFilesProcessed, numberOfFilesIgnored, numberOfFilesFound, langs, langFils, langBlnk, langCmnt, langCode, totalSum);
+    closedir(dir);
+}
 
 int process_command(struct command_t *command) {
 	int r;
@@ -550,6 +627,8 @@ int process_command(struct command_t *command) {
     }
 	if (!strcmp(command->name, "cloc")) {
         // TODO
+        char buff[100];
+        listFiles(getcwd(buff, sizeof(buff)));
         return SUCCESS;
 
     }

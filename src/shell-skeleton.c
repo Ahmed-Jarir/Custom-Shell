@@ -440,37 +440,68 @@ char* getBinPath(char* commandName){
         free(PATHArr);
     return path;
 }
-void countLines(int* blank, int* comment, int* code, const char* langComment, char* file){
+void countLines(int* blank, int* comment, int* code, const char* langComment, char* langBlockComment, char* langBlockCommentRev, char* file){
     // TODO: add comments
     char line[300];
     FILE *f = fopen(file, "r");
+    int cmntLock = 0;
     while(fgets(line, 300, f)) {
-        regex_t checkBlank;
-        int matchBlank = regcomp( &checkBlank, "^[[:space:]]*$", 0);;
-        matchBlank = regexec(&checkBlank, line, 0, NULL, 0);
-        
 
-        regex_t checkComment;
-        char patternComment[10];
-        int matchCmnt = -1;
-        if(langComment){
-            sprintf(patternComment, "^\\s*%s.*$", langComment);
-            matchCmnt = regcomp( &checkComment, patternComment, 0);
-            matchCmnt = regexec(&checkComment, line, 0, NULL, 0);
-        }
-
-
-        if(!matchCmnt){
+        if(cmntLock){
+            regex_t checkBlockComment;
+            char patternBlockComment[20];
+            int matchBlockCmnt = -1;
+            sprintf(patternBlockComment, "^[[:space:]]*.*%s", langBlockCommentRev);
+            matchBlockCmnt = regcomp(&checkBlockComment, patternBlockComment, 0);
+            matchBlockCmnt = regexec(&checkBlockComment, line, 0, NULL, 0);
             (*comment)++;
-        } 
-        else if (!matchBlank){
-            (*blank)++;
-        } else {
-            (*code)++;
+
+            if(!matchBlockCmnt) cmntLock = 0;
+
+        }
+        else{
+            regex_t checkBlank;
+            int matchBlank = regcomp(&checkBlank, "^[[:space:]]*$", 0);;
+            matchBlank = regexec(&checkBlank, line, 0, NULL, 0);
+            
+
+            regex_t checkComment;
+            char patternComment[20];
+            int matchCmnt = -1;
+            if(langComment){
+                sprintf(patternComment, "^[[:space:]]*%s.*", langComment);
+                matchCmnt = regcomp(&checkComment, patternComment, 0);
+                matchCmnt = regexec(&checkComment, line, 0, NULL, 0);
+            } 
+
+            regex_t checkBlockComment;
+            char patternBlockComment[40];
+            int matchBlockCmnt1 = -1;
+            int matchBlockCmnt2 = -1;
+            if (langBlockComment){
+                sprintf(patternBlockComment, "^[[:space:]]*%s.*", langBlockComment);
+                matchBlockCmnt1 = regcomp(&checkBlockComment, patternBlockComment, 0);
+                matchBlockCmnt1 = regexec(&checkBlockComment, line, 0, NULL, 0);
+
+                sprintf(patternBlockComment, "^[[:space:]]*%s.*%s.*", langBlockComment, langBlockCommentRev);
+                matchBlockCmnt2 = regcomp(&checkBlockComment, patternBlockComment, 0);
+                matchBlockCmnt2 = regexec(&checkBlockComment, line, 0, NULL, 0);
+                if(matchBlockCmnt2 && !matchBlockCmnt1) cmntLock = 1;
+            }
+
+
+            if(!matchBlockCmnt1 || !matchBlockCmnt2 || !matchCmnt){
+                (*comment)++;
+            } 
+            else if (!matchBlank){
+                (*blank)++;
+            } else {
+                (*code)++;
+            }
         }
     }
 }
-void printCloc (int numberOfFilesProcessed, int numberOfFilesIgnored, int numberOfFilesFound,const char* langs[], int files[], int blank[], int code[], int comments[], int sum[]){
+void printCloc (int numberOfFilesProcessed, int numberOfFilesIgnored, int numberOfFilesFound, const char* langs[], int files[], int blank[], int code[], int comments[], int sum[]){
 
     // prints the results
 
@@ -503,6 +534,8 @@ void handleFiles(char* path)
     const char* langs[NUMOFLANGS] = {"C","C++", "Python", "Text"};
     const char* langExtensions[NUMOFLANGS - 1] = {".c",".cpp", ".py"};
     const char* langComment[NUMOFLANGS] = {"//", "//", "#", NULL};
+    char* langBlockComment[NUMOFLANGS] = {"/\\*", "/\\*", "\"\"\"", NULL};
+    char* langBlockCommentRev[NUMOFLANGS] = {"\\*/", "\\*/", "\"\"\"", NULL};
 
     int langFils[NUMOFLANGS] = {0, 0, 0, 0};
     int langBlnk[NUMOFLANGS] = {0, 0, 0, 0};
@@ -532,7 +565,7 @@ void handleFiles(char* path)
             langFils[i]++;
             char* filePath = malloc(strlen(path) + strlen(files->d_name) + 2);
             sprintf(filePath, "%s/%s", path, files->d_name);
-            countLines(&langBlnk[i], &langCmnt[i], &langCode[i], langComment[i], filePath);
+            countLines(&langBlnk[i], &langCmnt[i], &langCode[i], langComment[i], langBlockComment[i], langBlockCommentRev[i], filePath);
             numberOfFilesProcessed++;
         } else {
             numberOfFilesIgnored++;

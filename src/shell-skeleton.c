@@ -381,64 +381,51 @@ int main() {
 	return 0;
 }
 char* getBinPath(char* commandName){
-    // add comments
-    char* path = NULL;
     char cwd[1024];
-    char** PATHArr;
-    char* PATHcpy;
+    char* PATH;
     char* PATHTok;
-    char* buffer;
-    int i = 0;
+    char* path;
 
-    PATHcpy =  strdup(getenv("PATH"));
-    PATHArr = (char **)malloc(200 * sizeof(char* ));
+    // checking for full path
     if ( !access(commandName, X_OK) ) {
-        path = commandName;
-        goto FREE;
+        return commandName;
     }
 
+    // check for executable in directory
     if (getcwd(cwd, sizeof(cwd)) != NULL) {
-        buffer = (char*)calloc(strlen(cwd) + strlen(commandName) + 2, 1);
+        path = (char*)calloc(strlen(cwd) + strlen(commandName) + 2, 1);
 
-        sprintf(buffer, "%s/%s", cwd, commandName);
-        if ( !access(buffer, X_OK) ) {
-            path = buffer;
-            goto FREE;
+        // concats the path and the name into buffer
+        sprintf(path, "%s/%s", cwd, commandName);
+        // checks if the path is accessable 
+        if ( !access(path, X_OK) ) {
+             return path;
         }
     }
 
-    PATHTok = strtok(PATHcpy, ":");
-
+    // gets a copy of the PATH string so that we dont edit the 
+    PATH = strdup(getenv("PATH"));
+    PATHTok = strtok(PATH, ":");
+    // checking for command in PATH
     while( PATHTok != NULL ) {
 
-       PATHArr[i] = PATHTok;
+        path = (char*)calloc(strlen(PATHTok) + strlen(commandName) + 2, 1);
+        // concats the path and the name into buffer
+        sprintf(path, "%s/%s", PATHTok, commandName);
 
-       i++;
-
-       PATHTok = strtok(NULL, ":");
-    }
-
-    i = 0;
-    while(PATHArr[i] != NULL){
-
-        buffer = (char*)calloc(strlen(PATHArr[i]) + strlen(commandName) + 2, 1);
-
-        sprintf(buffer, "%s/%s", PATHArr[i], commandName);
-
-        if ( !access(buffer, X_OK) ) {
-            path = buffer;
-            goto FREE;
+        // checks if the path is accessable 
+        if ( !access(path, X_OK) ) {
+             free(PATH);
+             return path;
         }
 
-        free(buffer);
-        i++;
+        free(path);
+
+        // gets the next token
+        PATHTok = strtok(NULL, ":");
     }
 
-    FREE:   
-        free(PATHcpy);
-        free(PATHTok);
-        free(PATHArr);
-    return path;
+    return NULL;
 }
 void countLines(int* blank, int* comment, int* code, const char* langComment, char* langBlockComment, char* langBlockCommentRev, char* file){
     // TODO: add comments
@@ -504,18 +491,17 @@ void countLines(int* blank, int* comment, int* code, const char* langComment, ch
 void printCloc (int numberOfFilesProcessed, int numberOfFilesIgnored, int numberOfFilesFound, const char* langs[], int files[], int blank[], int code[], int comments[], int sum[]){
 
     // prints the results
-
     printf("\t%d text files.\n", numberOfFilesFound);
     printf("\t%d unique files.\n", numberOfFilesProcessed);
     printf("\t%d files ignored.\n", numberOfFilesIgnored);
-    printf("-------------------------------------------------\n");
-    printf("%-20s%-8s%-8s%-8s%-8s\n", "Language", "files", "blank", "comment", "code");
+    printf("-----------------------------------------------------------\n");
+    printf("%-20s%-10s%-10s%-10s%-10s\n", "Language", "files", "blank", "comment", "code");
     for(int i = 0; i < 4; i++){
-        printf("%-20s%-8d%-8d%-8d%-8d\n", langs[i], files[i], blank[i], comments[i], code[i]);
+        printf("%-20s%-10d%-10d%-10d%-10d\n", langs[i], files[i], blank[i], comments[i], code[i]);
     }
-    printf("-------------------------------------------------\n");
-    printf("%-20s%-8d%-8d%-8d%-8d\n", "SUM:", sum[0], sum[1], sum[2], sum[3]);
-    printf("-------------------------------------------------\n");
+    printf("-----------------------------------------------------------\n");
+    printf("%-20s%-10d%-10d%-10d%-10d\n", "SUM:", sum[0], sum[1], sum[2], sum[3]);
+    printf("-----------------------------------------------------------\n");
 
 
 }
@@ -747,7 +733,7 @@ int process_command(struct command_t *command) {
             for(i = 1; i < command->arg_count ; i++){
                 args[i] = command->args[i];
             }
-            args[i + 1] = NULL;
+            /* args[i + 1] = NULL; */
 
             execv(path, args);
 

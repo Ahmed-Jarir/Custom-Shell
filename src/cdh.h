@@ -1,56 +1,78 @@
 #include "cloc.h"
-int checkRepetition(char* path, char* topTenPaths[], int arrSize){
-    for(int i = 0; i < arrSize; i++){
-        if(!strcmp(path, topTenPaths[i])){
+#define MAX_PATH_LEN 100
+#define MAX_LINE_LEN 1000
+#define MAX_DIRS 10
+
+int CheckRepetition(char* path, char** topDirs, int numDirs) {
+    for(int i = 0; i < numDirs; i++) {
+        if(strcmp(path, topDirs[i]) == 0) {
             return 1;
         }
     }
     return 0;
 }
-char* cdh() {
-    //TODO: clean up
-    char cdh[100];
-    char buff[1000];
 
-    sprintf(cdh, "%s/.cd_history", getenv("HOME"));
+char* Cdh() {
+    // path to the cd history file
+    char cdhPath[MAX_PATH_LEN];
+    sprintf(cdhPath, "%s/.cd_history", getenv("HOME"));
 
-    FILE* cdhr = fopen(cdh, "r");
-    int i = 0;
-    // gets the number of lines in the file
-    while(fgets(buff, 1000 - 1, cdhr) != NULL) i++;
-    
+    // open the cd history file with read flag
+    FILE* cdhFile = fopen(cdhPath, "r");
+    if(cdhFile == NULL) {
+        printf("Failed to open cd history file\n");
+        return NULL;
+    }
 
-    rewind(cdhr);
+    // reads the file content and stores them into an array
+    char* dirs[MAX_DIRS];
+    int numLines = 0;
+    char buff[MAX_LINE_LEN];
+    while(fgets(buff, MAX_LINE_LEN, cdhFile) != NULL) {
 
-    char* listOfDirs[i];
-    char letters = 'a';
-    int j = i;
-    // gets the content of the file
-    while(fgets(buff, 1000 - 1, cdhr) != NULL) {
+        // Remove the newline character at the end of the line
         buff[strcspn(buff, "\n")] = 0;
-        i--;
-        listOfDirs[i] = strdup(buff);
+        dirs[numLines] = strdup(buff);
+        numLines++;
     }
+    fclose(cdhFile);
 
-    char* topTen[10];
+    char* latestTenDirs[MAX_DIRS];
+    int numLatestDirs = 0;
+    for(int i = numLines - 1; i >= 0 && numLatestDirs < MAX_DIRS; i--) {
 
-    int num = 1;
-    for(i = 0; i < j; i++) {
-        if (!checkRepetition(listOfDirs[i], topTen, num - 1)) {
-            topTen[num - 1] = listOfDirs[i];
-            printf("%c %d) %s\n", letters++, num++, listOfDirs[i]);
+        // check if the directory is already in the top 10
+        if(!CheckRepetition(dirs[i], latestTenDirs, numLatestDirs)) {
+            latestTenDirs[numLatestDirs] = dirs[i];
+            numLatestDirs++;
         }
-        if (num == 11) break;
+
     }
-    char inputChar;
-    int inputIdx;
+
+    // prints options
+    for(int i = 0; i < numLatestDirs; i++) printf("%c %d) %s\n", 'a' + i, i + 1, latestTenDirs[i]);
+
+    // get user input
     printf("Select directory by letter or number: ");
+    char inputChar;
     if (scanf("%c", &inputChar) == -1){
         printf("scan faild");
     }
-    if (inputChar == '\n') return NULL;
-
-    inputChar = inputChar > 96 ? inputChar - 49 : inputChar - 1;
-    inputIdx = atoi(&inputChar);
-	return topTen[inputIdx];
+    if(inputChar == '\n') {
+        return NULL;
+    }
+    int inputIdx;
+    // check if its a letter or not and get the index
+    if(inputChar >= 'a' && inputChar < 'a' + numLatestDirs) {
+        inputIdx = inputChar - 'a';
+    }
+    else {
+        inputIdx = atoi(&inputChar) - 1;
+    }
+    // check if the input is valid
+    if(inputIdx < 0 || inputIdx >= numLatestDirs) {
+        printf("Invalid input\n");
+        return NULL;
+    }
+    return latestTenDirs[inputIdx];
 }

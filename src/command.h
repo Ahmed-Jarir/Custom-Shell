@@ -247,7 +247,7 @@ int process_command(struct command_t *command) {
 	if (!strcmp(command->name, "cdh")) {
         // TODO: implement the top 10 limit and remove duplicate directories
         // add comments
-        char* path = cdh();
+        char* path = Cdh();
         if (!path) return SUCCESS;
         r = chdir(path);
 		if (r == -1) {

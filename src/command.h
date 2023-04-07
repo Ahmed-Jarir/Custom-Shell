@@ -370,7 +370,7 @@ int process_command(struct command_t *command) {
         if(fileDesc > 0) {
             close(fileDesc); 
             dup2(stdoutCpy, 1);
-            dup2(stdinCpy, 1);
+            dup2(stdinCpy, 0);
         }
 
         return SUCCESS;

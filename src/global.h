@@ -12,18 +12,18 @@
 const char *sysname = "mishell";
 
 enum return_codes {
-	SUCCESS = 0,
-	EXIT = 1,
-	UNKNOWN = 2,
+    SUCCESS = 0,
+    EXIT = 1,
+    UNKNOWN = 2,
 };
 
 struct command_t {
-	char *name;
-	bool background;
-	bool auto_complete;
-	int arg_count;
-	char **args;
-	char *redirects[3]; // in/out redirection
-	struct command_t *next; // for piping
+    char *name;
+    bool background;
+    bool auto_complete;
+    int arg_count;
+    char **args;
+    char *redirects[3]; // in/out redirection
+    struct command_t *next; // for piping
 };
 

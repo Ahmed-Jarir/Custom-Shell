@@ -363,7 +363,10 @@ int process_command(struct command_t *command) {
 	} else {
 		// TODO: implement background processes here
         // TODO: fix what happens after a process is put to the background
-        if (!command->background) wait(0); // wait for child process to finish
+        if (!command->background) {
+            int status;
+            waitpid(pid, &status, 0); // wait for child process to finish
+        };
         if(fileDesc > 0) {
             close(fileDesc); 
             dup2(stdoutCpy, 1);

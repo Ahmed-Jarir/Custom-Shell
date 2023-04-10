@@ -1,3 +1,5 @@
+#include "global.h"
+#include "command.h"
 #include "prompt.h"
 int main() {
     while (1) {

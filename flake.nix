@@ -9,7 +9,7 @@
     in {
       devShells.default = pkgs.mkShell {
         packages = with pkgs; [
-          gcc 
+          gcc11
         ];
       };
     });

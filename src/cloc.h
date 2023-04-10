@@ -1,4 +1,6 @@
-#include "binPath.h"
+#ifndef CLOC
+#define CLOC
+#include "global.h"
 void countLines(int* blank, int* comment, int* code, const char* langComment, char* langBlockComment, char* langBlockCommentRev, char* file){
     // TODO: add comments
     char line[300];
@@ -139,3 +141,4 @@ void handleFiles(char* path)
     printCloc(numberOfFilesProcessed, numberOfFilesIgnored, numberOfFilesFound, langs, langFils, langBlnk, langCode, langCmnt, totalSum);
     closedir(dir);
 }
+#endif

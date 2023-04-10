@@ -1,3 +1,7 @@
+#ifndef PROMPT
+#define PROMPT
+
+#include "global.h"
 #include "command.h"
 /**
  * Show the command prompt
@@ -114,3 +118,4 @@ int prompt(struct command_t *command) {
     tcsetattr(STDIN_FILENO, TCSANOW, &backup_termios);
     return SUCCESS;
 }
+#endif

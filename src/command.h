@@ -1,3 +1,9 @@
+#ifndef CMD
+#define CMD
+
+#include "global.h"
+#include "binPath.h"
+#include "cloc.h"
 #include "cdh.h"
 /**
  * Prints a command struct
@@ -245,13 +251,7 @@ int process_command(struct command_t *command) {
                 printf("-%s: %s: %s\n", sysname, command->name,
                        strerror(errno));
             } 
-            else {
-                char cdh[100];
-                sprintf(cdh, "%s/.cd_history", getenv("HOME"));
-                FILE *cdhf = fopen(cdh, "a+");
-                fprintf(cdhf, "%s\n", pwd);
-                fclose(cdhf);
-            }
+            else saveCdh(pwd);
 
             return SUCCESS;
         }
@@ -380,3 +380,4 @@ int process_command(struct command_t *command) {
     printf("-%s: %s: command not found\n", sysname, command->name);
     return UNKNOWN;
 }
+#endif

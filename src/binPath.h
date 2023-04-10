@@ -1,3 +1,5 @@
+#ifndef GETBIN
+#define GETBIN
 #include "global.h"
 char* getBinPath(char* commandName){
     char cwd[1024];
@@ -46,3 +48,4 @@ char* getBinPath(char* commandName){
 
     return NULL;
 }
+#endif

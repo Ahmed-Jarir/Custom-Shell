@@ -1,7 +1,17 @@
-#include "cloc.h"
+#ifndef CDH
+#define CDH
+#include "global.h"
 #define MAX_PATH_LEN 100
 #define MAX_LINE_LEN 1000
 #define MAX_DIRS 10
+void saveCdh(char pwd[]){
+
+    char cdh[100];
+    sprintf(cdh, "%s/.cd_history", getenv("HOME"));
+    FILE *cdhf = fopen(cdh, "a+");
+    fprintf(cdhf, "%s\n", pwd);
+    fclose(cdhf);
+}
 
 int CheckRepetition(char* path, char** topDirs, int numDirs) {
     for(int i = 0; i < numDirs; i++) {
@@ -73,6 +83,10 @@ char* Cdh() {
     if(inputIdx < 0 || inputIdx >= numLatestDirs) {
         printf("Invalid input\n");
         return NULL;
+    } 
+    if(latestTenDirs[inputIdx]){
+        saveCdh(latestTenDirs[inputIdx]);
     }
     return latestTenDirs[inputIdx];
 }
+#endif

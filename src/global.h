@@ -1,3 +1,5 @@
+#ifndef GLOB
+#define GLOB
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -26,4 +28,4 @@ struct command_t {
     char *redirects[3]; // in/out redirection
     struct command_t *next; // for piping
 };
-
+#endif

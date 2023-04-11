@@ -323,6 +323,10 @@ int process_command(struct command_t *command) {
 
     }
 
+    if (!strcmp(command->name, "psvis")) {
+        return SUCCESS;
+    }
+
     int fileDesc = -1;
     // creates backup of stdout and stdin for restoration
     int stdoutCpy = dup(STDOUT_FILENO);

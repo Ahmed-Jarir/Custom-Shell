@@ -24,6 +24,7 @@ void countLines(int* blank, int* comment, int* code, const char* langComment, ch
             regex_t checkBlank;
             int matchBlank = regcomp(&checkBlank, "^[[:space:]]*$", 0);;
             matchBlank = regexec(&checkBlank, line, 0, NULL, 0);
+            regfree(&checkBlank);
             
 
             regex_t checkComment;
@@ -33,6 +34,7 @@ void countLines(int* blank, int* comment, int* code, const char* langComment, ch
                 sprintf(patternComment, "^[[:space:]]*%s.*", langComment);
                 matchCmnt = regcomp(&checkComment, patternComment, 0);
                 matchCmnt = regexec(&checkComment, line, 0, NULL, 0);
+                regfree(&checkComment);
             } 
 
             regex_t checkBlockComment;
@@ -48,6 +50,7 @@ void countLines(int* blank, int* comment, int* code, const char* langComment, ch
                 matchBlockCmnt2 = regcomp(&checkBlockComment, patternBlockComment, 0);
                 matchBlockCmnt2 = regexec(&checkBlockComment, line, 0, NULL, 0);
                 if(matchBlockCmnt2 && !matchBlockCmnt1) cmntLock = 1;
+                regfree(&checkBlockComment);
             }
 
 

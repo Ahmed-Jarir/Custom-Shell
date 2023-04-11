@@ -9,7 +9,8 @@
     in {
       devShells.default = pkgs.mkShell {
         packages = with pkgs; [
-          gcc11
+          linuxHeaders
+          gcc
         ];
       };
     });

@@ -5,6 +5,7 @@
 #include "binPath.h"
 #include "cloc.h"
 #include "cdh.h"
+#include "psvis.h"
 /**
  * Prints a command struct
  * @param struct command_t *
@@ -324,6 +325,8 @@ int process_command(struct command_t *command) {
     }
 
     if (!strcmp(command->name, "psvis")) {
+        int pid = atoi(command->args[1]);
+        psvis(pid);
         return SUCCESS;
     }
 

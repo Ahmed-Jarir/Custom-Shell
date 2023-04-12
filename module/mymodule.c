@@ -4,15 +4,19 @@
 #include <linux/module.h>
 #include <linux/pid.h>
 #include <linux/sched.h>
+#include <linux/fs.h>
 #include <linux/slab.h>
+
+#define DEVICE_NAME "node_device"
+#define CLASS_NAME "node"
 
 // Meta Information
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("ME");
 MODULE_DESCRIPTION("A module that knows how to greet");
 
-char *name;
-int age;
+/* char *name; */
+/* int age; */
 int pid;
 
 /*
@@ -23,21 +27,24 @@ int pid;
  * for exposing parameters in sysfs (if non-zero) at a later stage.
  */
 
-module_param(name, charp, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-MODULE_PARM_DESC(name, "name of the caller");
+/* module_param(name, charp, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH); */
+/* MODULE_PARM_DESC(name, "name of the caller"); */
 
-module_param(age, int, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-MODULE_PARM_DESC(age, "age of the caller");
+/* module_param(age, int, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH); */
+/* MODULE_PARM_DESC(age, "age of the caller"); */
 
 module_param(pid, int, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 MODULE_PARM_DESC(pid, "PID of the process");
 
 struct node {
     int process_pid;
+    int parent_pid;
     unsigned long creation_time;
+    int eldest_child_index;
     int number_of_children;
     struct node **children;
 };
+
 
 
 // a function to get the children of a process given its PID
@@ -70,6 +77,8 @@ struct node* get_children_of_process(int Pid)
 
     // initialize the parent node
     parent->process_pid = Pid;
+    parent->parent_pid = -1;
+    parent->eldest_child_index = 0;
     parent->creation_time = task->start_time;
     parent->number_of_children = num_of_children;
 
@@ -90,39 +99,42 @@ struct node* get_children_of_process(int Pid)
             kfree(parent);
             return NULL;
         }
+        child_node->parent_pid = Pid;
         parent->children[i] = child_node;
+        if(parent->children[i]->creation_time < parent->children[parent->eldest_child_index]->creation_time){
+            parent->eldest_child_index = i;
+        }
         i++;
     }
 
     return parent;
 }
 
-// A function that runs when the module is first loaded
-int simple_init(void) {
-	struct task_struct *ts;
-    struct node* tree;
-	ts = get_pid_task(find_get_pid(4), PIDTYPE_PID);
-    tree = get_children_of_process(pid);
-
-    if (tree != NULL){
-        printk(KERN_INFO "root PID: %d, Start Time: %lu\n", tree->process_pid, tree->creation_time);
-        for(int i = 0; i < tree->number_of_children; i++){
-            struct node* child = tree->children[i];
-            printk(KERN_INFO "Child PID: %d, Start Time: %lu\n", child->process_pid, child->creation_time);
-
-        }
+void printTree(struct node* tree) {
+    printk(KERN_INFO "pid: %d, ppid: %d, creation_time: %lu, eldest child: %d\n", tree->process_pid, tree->parent_pid, tree->creation_time, tree->number_of_children == 0 ? 0 : tree->children[tree->eldest_child_index]->process_pid);
+    if(tree->number_of_children == 0) {
+        return;
     }
-	printk("Hello from the kernel, user: %s, age: %d\n", name, age);
-	printk("command: %s\n", ts->comm);
-	return 0;
+    for (int i = 0; i < tree->number_of_children; i++){
+        printTree(tree->children[i]);
+    }
+
+}
+
+
+int simple_init(void) {
+    printk("Hello from the kernel\n");
+    if(pid) {
+        struct node* tree = get_children_of_process(pid);
+        printTree(tree);
+    }
+    return 0;
 }
 
 // A function that runs when the module is removed
 void simple_exit(void) {
-	printk("Goodbye from the kernel, user: %s, age: %d\n", name, age);
+	printk("Goodbye from the kernel\n");
 }
-
-
 
 module_init(simple_init);
 module_exit(simple_exit);

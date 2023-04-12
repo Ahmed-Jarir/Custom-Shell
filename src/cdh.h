@@ -64,20 +64,24 @@ char* Cdh() {
 
     // get user input
     printf("Select directory by letter or number: ");
-    char inputChar;
-    if (scanf("%c", &inputChar) == -1){
-        printf("scan faild");
+    char* inputStr = (char*)malloc(sizeof(char));
+    if (scanf("%s", inputStr) == -1){
+        printf("scan faild\n");
     }
-    if(inputChar == '\n') {
+    if (strlen(inputStr) > 1 && strcmp(inputStr, "10")) {
+        printf("invalid input: %s\n", inputStr);
+        return NULL;
+    }
+
+    if(inputStr[0] == '\n') {
         return NULL;
     }
     int inputIdx;
     // check if its a letter or not and get the index
-    if(inputChar >= 'a' && inputChar < 'a' + numLatestDirs) {
-        inputIdx = inputChar - 'a';
-    }
-    else {
-        inputIdx = atoi(&inputChar) - 1;
+    if(inputStr[0] >= 'a' && inputStr[0] < 'a' + numLatestDirs) {
+        inputIdx = inputStr[0] - 'a';
+    } else {
+        inputIdx = atoi(inputStr) - 1;
     }
     // check if the input is valid
     if(inputIdx < 0 || inputIdx >= numLatestDirs) {

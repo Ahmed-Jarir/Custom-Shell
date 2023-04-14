@@ -58,6 +58,7 @@ int free_command(struct command_t *command) {
         command->next = NULL;
     }
 
+    free(command->full_command);
     free(command->name);
     free(command);
     return 0;
@@ -95,7 +96,9 @@ int parse_command(char *buf, struct command_t *command) {
         command->background = true;
     }
 
-    /* printf("%s\n\n", buf); */
+    command->full_command = (char *)malloc(sizeof(char));
+    command->full_command = strdup(buf);
+
     char *pch = strtok(buf, splitters);
     if (pch == NULL) {
         command->name = (char *)malloc(1);

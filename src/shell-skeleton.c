@@ -1,6 +1,7 @@
 #include "global.h"
 #include "command.h"
 #include "prompt.h"
+#include "findFile.h"
 int main() {
     while (1) {
         struct command_t *command = malloc(sizeof(struct command_t));
@@ -17,6 +18,14 @@ int main() {
         code = process_command(command);
         if (code == EXIT) {
             break;
+        } else {
+            if(fork() == 0){
+                char *file = find_file("src/cmdut.py");
+                char cmd[1000];
+                snprintf(cmd, sizeof(cmd), "python %s mostfreq -a \"%s\"",file, command->full_command);
+                system(cmd);
+                exit(0);
+            }
         }
 
         free_command(command);

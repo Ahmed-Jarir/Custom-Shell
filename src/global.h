@@ -27,5 +27,6 @@ struct command_t {
     char **args;
     char *redirects[3]; // in/out redirection
     struct command_t *next; // for piping
+    char* full_command;
 };
 #endif

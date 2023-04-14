@@ -51,8 +51,7 @@ commands are:
 
             with open(pathToJson, "r") as r:
                 data = json.load(r)
-                print(data)
-                data[command] = 1 if command not in data.keys() else data[command] + 1
+            data[command] = 1 if command not in data.keys() else data[command] + 1
             with open(pathToJson, "w") as w:
                 json.dump(data, w, indent = 4)
 
@@ -99,13 +98,15 @@ commands are:
         parser = argparse.ArgumentParser(description="The MostFreq subcommand tracks your most used commands")
         parser.add_argument("-l", "--list-commands", dest="listCmds", help = "List a number of the most frequently used commands", nargs = '?', const = 10, type = int)
         parser.add_argument("-s", "--select", dest="select", help = "Select an index of the command that you want to run",  nargs = '?', const = 10, type = int)
-        parser.add_argument("-a", "--add", dest = "command", help = "Add a commmand", default = None, type = str)
+        parser.add_argument("-a", "--add", dest = "command", help = "Add a commmand",  nargs = "*", default = None, type = str)
         parser.add_argument("-r", "--remove", dest = "remove", help = "Remove one of the commmands using its index",  nargs = '?', const = 10, type = int)
         parser.add_argument("-p", "--purge", dest = "purge", help = "Purge the list of the most frequently used commands", action = "store_true")
 
         args = parser.parse_args(sys.argv[2:])
- 
-        if args.listCmds:
+        if args.command:
+            cmd = " ".join(args.command)
+            addCommand(cmd)
+        elif args.listCmds:
             printCommands(args.listCmds)
         elif args.select:
             select(args.select)
@@ -113,8 +114,7 @@ commands are:
             purge()
         elif args.remove:
             removeCommand(args.remove)
-        elif args.command:
-            addCommand(args.command)
+
         else:
             print("No arguments provided. Please provide an argument.\n")
             parser.print_help()
@@ -211,15 +211,16 @@ commands are:
         parser.add_argument("-p", "--purge", dest = "purge", help = "Purge the list of the most frequently used commands", action = "store_true")
 
         args = parser.parse_args(sys.argv[2:])
-        
-        if args.listCmds:
+
+        if args.command:
+            cmd = " ".join(args.command)
+            addCommand(cmd)
+        elif args.listCmds:
             printCommands(args.listCmds)
         elif args.select:
             select(args.select)
         elif args.swap:
             swap(args.swap)
-        elif args.command:
-            addCommand(args.command)
         elif args.remove:
             removeCommand(args.remove)
         elif args.purge:

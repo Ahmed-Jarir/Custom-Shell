@@ -23,7 +23,10 @@ int main() {
                 char *file = find_file("src/cmdut.py");
                 char cmd[1000];
                 snprintf(cmd, sizeof(cmd), "python %s mostfreq -a \"%s\"",file, command->full_command);
-                system(cmd);
+                if (system(cmd)){
+                    printf("system call failed");
+                    exit(1);
+                }
                 exit(0);
             }
         }

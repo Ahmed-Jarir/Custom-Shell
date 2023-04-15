@@ -1,4 +1,6 @@
+import pyperclip as pc
 import argparse
+import time
 import json
 import sys
 import os
@@ -11,8 +13,8 @@ class Cmd_Ut(object):
             description="Command Utils",
             usage="""cu <command> [<args>]
 commands are:
-   mostfreq     shows the most frequently used commands
-   favorite     shows the your favorite commands and manipulates them
+   m     shows the most frequently used commands
+   f     shows the your favorite commands and manipulates them
 """)
         parser.add_argument("command", help="Subcommand to run")
 
@@ -26,7 +28,7 @@ commands are:
             exit(1)
         getattr(self, args.command)()
 
-    def mostfreq(self):
+    def m(self):
         pathToJson = self.path + "mostfreq.json"
         if not os.path.exists(pathToJson):
             with open(pathToJson, "w") as w:
@@ -79,25 +81,23 @@ commands are:
             with open(pathToJson, "w") as w:
                 json.dump(data, w, indent = 4)
 
-
-
-
         def purge():
             with open(pathToJson, "w") as w:
                 json.dump({}, w, indent = 4)
 
         def select(maxNumberOfCommands):
-            if maxNumberOfCommands == None :
+            if maxNumberOfCommands == None:
                 return
-            listOfCommands = printCommands(maxNumberOfCommands)
+            listOfCommands = maxNumberOfCommands();
             if listOfCommands == None:
                 return
+
             index = int(input("Enter Command Index:"))
-            os.system(listOfCommands[index - 1])
+            pc.copy(listOfCommands[index - 1])
 
         parser = argparse.ArgumentParser(description="The MostFreq subcommand tracks your most used commands")
         parser.add_argument("-l", "--list-commands", dest="listCmds", help = "List a number of the most frequently used commands", nargs = '?', const = 10, type = int)
-        parser.add_argument("-s", "--select", dest="select", help = "Select an index of the command that you want to run",  nargs = '?', const = 10, type = int)
+        parser.add_argument("-s", "--select", dest="select", help = "Select an index of the command that you want to copy", nargs = '?', const = 10, type = int)
         parser.add_argument("-a", "--add", dest = "command", help = "Add a commmand",  nargs = "*", default = None, type = str)
         parser.add_argument("-r", "--remove", dest = "remove", help = "Remove one of the commmands using its index",  nargs = '?', const = 10, type = int)
         parser.add_argument("-p", "--purge", dest = "purge", help = "Purge the list of the most frequently used commands", action = "store_true")
@@ -119,12 +119,22 @@ commands are:
             print("No arguments provided. Please provide an argument.\n")
             parser.print_help()
 
-    def favorite(self):
+    def f(self):
         pathToJson = self.path + "favorite.json"
         
         if not os.path.exists(pathToJson):
             with open(pathToJson, "w") as w:
                 json.dump({}, w, indent = 4)
+
+        def getCmds(maxNumOfCmds):
+            with open(pathToJson, "r") as r:
+                data = json.load(r)
+            listOfCmds = []
+            for idx, cmd in data.items() :
+                listOfCmds.append(cmd)
+                if int(idx) >= maxNumOfCmds:
+                    break
+            return listOfCmds
 
 
         def printCommands(max_cmds):
@@ -132,7 +142,7 @@ commands are:
                 data = json.load(r)
 
             listOfIndecies = []
-            for index, cmd,  in data.items() :
+            for index, cmd in data.items() :
                 print(f"{index}) {cmd}")
                 listOfIndecies.append(index)
                 if int(index) >= max_cmds:
@@ -180,11 +190,13 @@ commands are:
         def select(maxNumberOfCommands):
             if maxNumberOfCommands == None :
                 return
-            listOfCommands = printCommands(maxNumberOfCommands)
+            listOfCommands = getCmds(maxNumberOfCommands)
+            printCommands(maxNumberOfCommands)
             if listOfCommands == None:
                 return
             index = int(input("Enter Command Index:"))
-            os.system(listOfCommands[index - 1])
+            
+            pc.copy(listOfCommands[index - 1])
 
         def swap(indeciesToSwap):
             with open(pathToJson, "r") as r:
@@ -204,7 +216,7 @@ commands are:
         parser = argparse.ArgumentParser(description="The Favorite subcommand allows you to store commands that you use frequently")
 
         parser.add_argument("-l", "--list-commands", dest="listCmds", help = "List a number of the most frequently used commands", nargs = '?', const = 10, type = int)
-        parser.add_argument("-s", "--select", dest="select", help = "Select an index of the command that you want to run",  nargs = '?', const = 10, type = int)
+        parser.add_argument("-s", "--select", dest="select", help = "Select an index of the command that you want to copy",  nargs = '?', const = 10, type = int)
         parser.add_argument("-sp", "--swap", dest="swap", help = "Select an index of the two commands that you want to swap",  nargs = 2, const = None, type = int)
         parser.add_argument("-a", "--add", dest = "command", help = "Add a commmand", default = None, type = str)
         parser.add_argument("-r", "--remove", dest = "remove", help = "Remove one of the commmands using its index", action = "store_true")

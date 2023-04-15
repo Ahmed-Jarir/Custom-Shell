@@ -11,6 +11,9 @@
         packages = with pkgs; [
           linuxHeaders
           gcc
+          pahole
+          python310
+          python310Packages.pyperclip
         ];
       };
     });

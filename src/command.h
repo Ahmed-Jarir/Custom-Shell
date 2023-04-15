@@ -6,6 +6,7 @@
 #include "cloc.h"
 #include "cdh.h"
 #include "psvis.h"
+#include "cmdut.h"
 /**
  * Prints a command struct
  * @param struct command_t *
@@ -331,6 +332,9 @@ int process_command(struct command_t *command) {
         int pid = atoi(command->args[1]);
         psvis(pid);
         return SUCCESS;
+    }
+    if (!strcmp(command->name, "cu")) {
+        runCmdUt(command);
     }
 
     int fileDesc = -1;

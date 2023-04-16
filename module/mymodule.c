@@ -19,7 +19,7 @@ struct my_struct {
     int process_pid;
     int parent_pid;
     unsigned long creation_time;
-    int eldest_child_index;
+    int eldest_child_pid;
     int num_of_nodes;
     int number_of_children;
 };
@@ -126,7 +126,7 @@ void sendTree(struct node* tree) {
     data.parent_pid = tree->parent_pid;
     data.creation_time = tree->creation_time;
     data.number_of_children = tree->number_of_children;
-    data.eldest_child_index = tree->eldest_child_index;
+    data.eldest_child_pid = tree->number_of_children == 0 ? -1 : tree->children[tree->eldest_child_index]->process_pid;
     data.num_of_nodes = num_of_nodes;
 
     skb_out = nlmsg_new(sizeof(data), 0);

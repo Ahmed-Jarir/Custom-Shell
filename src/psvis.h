@@ -9,7 +9,7 @@ struct my_struct {
     int process_pid;
     int parent_pid;
     unsigned long creation_time;
-    int eldest_child_index;
+    int eldest_child_pid;
     int numOfNodes;
     int number_of_children;
 };
@@ -18,7 +18,7 @@ struct node {
     int process_pid;
     int parent_pid;
     unsigned long creation_time;
-    int eldest_child_index;
+    int eldest_child_pid;
     int number_of_children;
     struct node **children;
 };
@@ -73,7 +73,7 @@ int get_data() {
                 received_data->process_pid,
                 received_data->parent_pid,
                 received_data->creation_time,
-                received_data->eldest_child_index,
+                received_data->eldest_child_pid,
                 received_data->number_of_children,
                 received_data->numOfNodes
                 );
@@ -128,7 +128,7 @@ int unload_module(const char* module_name) {
 }
 
 void printTree(struct node* tree) {
-    printf("pid: %d, ppid: %d, creation_time: %lu, eldest child: %d\n", tree->process_pid, tree->parent_pid, tree->creation_time, tree->number_of_children == 0 ? 0 : tree->children[tree->eldest_child_index]->process_pid);
+    printf("pid: %d, ppid: %d, creation_time: %lu, eldest child: %d\n", tree->process_pid, tree->parent_pid, tree->creation_time, tree->number_of_children == 0 ? 0 : tree->children[tree->eldest_child_pid]->process_pid);
     if(tree->number_of_children == 0) {
         return;
     }

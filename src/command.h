@@ -369,6 +369,7 @@ int process_command(struct command_t *command) {
             }
 
             execv(path, args);
+            exit(1);
 
         }
         /* execvp(command->name, command->args); // exec+args+path */
@@ -378,6 +379,7 @@ int process_command(struct command_t *command) {
         if (!command->background) {
             int status;
             waitpid(pid, &status, 0); // wait for child process to finish
+            printf("status: %d",status);
         }
         // restores stdout and stdin and closes the opened file descriptor
         if(fileDesc > 0) {

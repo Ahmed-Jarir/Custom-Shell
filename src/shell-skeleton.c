@@ -18,13 +18,17 @@ int main() {
         code = process_command(command);
         if (code == EXIT) {
             break;
-        } else if (code == SUCCESS){
+        } 
+        // checks if the code was successfully executed and stores the command
+        else if (code == SUCCESS){
             if(fork() == 0){
                 char *file = find_file("src/cmdut.py");
                 char cmd[1000];
+                
+                // stores the command 
                 snprintf(cmd, sizeof(cmd), "python %s m -a \"%s\"",file, command->full_command);
+                // checks if system fails
                 if (system(cmd)) {
-                    printf("system call failed");
                     exit(1);
                 }
                 exit(0);

@@ -12,6 +12,7 @@ void runCmdUt(struct command_t *command){
     int i = 0;
     while(args[i] != NULL) {
 
+        // concatinates the command and the arguments 
         sprintf(cmd, "%s %s", strdup(cmd), args[i]);
         i++;
     }

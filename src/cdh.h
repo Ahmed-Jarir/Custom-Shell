@@ -4,8 +4,8 @@
 #define MAX_PATH_LEN 100
 #define MAX_LINE_LEN 1000
 #define MAX_DIRS 10
+// saves the directory into the ~/.cd_history file like bash uses ~/.bash_history in the home directory
 void saveCdh(char pwd[]){
-
     char cdh[100];
     sprintf(cdh, "%s/.cd_history", getenv("HOME"));
     FILE *cdhf = fopen(cdh, "a+");
@@ -16,6 +16,7 @@ void saveCdh(char pwd[]){
 int CheckRepetition(char* path, char** topDirs, int numDirs) {
     for(int i = 0; i < numDirs; i++) {
         if(strcmp(path, topDirs[i]) == 0) {
+            // returns 1 if there is repitition 
             return 1;
         }
     }

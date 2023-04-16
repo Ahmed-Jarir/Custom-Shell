@@ -12,9 +12,13 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("ME");
 MODULE_DESCRIPTION("A module that knows how to greet");
 
+// the input pid
 int PID;
 module_param(PID, int, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 MODULE_PARM_DESC(PID, "PID of the process");
+
+// this struct is used to send data to the 
+// c script / user space
 struct my_struct {
     int process_pid;
     int parent_pid;
@@ -24,6 +28,7 @@ struct my_struct {
     int number_of_children;
 };
 
+// this struct is used to construct a tree in the kernel space 
 struct node {
     int process_pid;
     int parent_pid;
@@ -47,6 +52,7 @@ static void my_input(struct sk_buff *skb) {
 }
 
 int num_of_nodes = 1;
+// construct a graph that contains the root pid and the children
 struct node* get_children_of_process(int Pid)
 {
     struct task_struct *task;
@@ -106,11 +112,13 @@ struct node* get_children_of_process(int Pid)
 
         child_node->parent_pid = Pid;
         parent->children[i] = child_node;
+        // checks for the eldest child
         if(first_child) {
             parent->children[i]->eldest_child = 1;
             parent->eldest_child_index = i;
             first_child = 0;
-        } else if(parent->children[i]->creation_time < parent->children[parent->eldest_child_index]->creation_time) {
+        } 
+        else if(parent->children[i]->creation_time < parent->children[parent->eldest_child_index]->creation_time) {
             parent->children[parent->eldest_child_index]->eldest_child = 0;
             parent->children[i]->eldest_child = 1;
             parent->eldest_child_index = i;
@@ -129,6 +137,8 @@ struct node* get_children_of_process(int Pid)
     return parent;
 }
 
+// sends the tree but it is sent one node at time without 
+// the children array
 void sendTree(struct node* tree) {
     struct nlmsghdr *nlh;
     struct sk_buff *skb_out;
@@ -169,6 +179,7 @@ void sendTree(struct node* tree) {
     }
 
 }
+// recursively prints the tree in the kernel log
 void printTree(struct node* tree) {
     printk(KERN_INFO "pid: %d, ppid: %d, creation_time: %lu, eldest child: %d\n", tree->process_pid, tree->parent_pid, tree->creation_time, tree->eldest_child);
     if(tree->number_of_children == 0) {
@@ -190,6 +201,7 @@ static void send_to_userspace(struct timer_list *t) {
 
     num_of_nodes = 1;
     tree = get_children_of_process(PID);
+    // sends the tree recursively one node at a time
     sendTree(tree);
     // uncommment to check tree structure in kernel
     /* printTree(tree); */
@@ -197,10 +209,12 @@ static void send_to_userspace(struct timer_list *t) {
 }
 
 static int __init my_module_init(void) {
+
     struct netlink_kernel_cfg cfg = {
         .input = my_input,
     };
 
+    // the link between the kernel and the c script is initialised
     nl_sk = netlink_kernel_create(&init_net, NETLINK_USER, &cfg);
     if (!nl_sk) {
         printk(KERN_ALERT "Error creating Netlink socket.\n");
@@ -217,6 +231,7 @@ static int __init my_module_init(void) {
 
 static void __exit my_module_exit(void) {
     del_timer(&my_timer);
+    // releases the link for later use
     netlink_kernel_release(nl_sk);
     printk(KERN_INFO "Netlink socket released.\n");
 }

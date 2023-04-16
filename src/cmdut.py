@@ -96,13 +96,13 @@ commands are:
             pc.copy(listOfCommands[index - 1])
 
         parser = argparse.ArgumentParser(description="The MostFreq subcommand tracks your most used commands")
+        parser.add_argument("-a", "--add", dest = "command", help = "Add a commmand",  nargs = 1, default = None, type = str)
         parser.add_argument("-l", "--list-commands", dest="listCmds", help = "List a number of the most frequently used commands", nargs = '?', const = 10, type = int)
         parser.add_argument("-s", "--select", dest="select", help = "Select an index of the command that you want to copy", nargs = '?', const = 10, type = int)
-        parser.add_argument("-a", "--add", dest = "command", help = "Add a commmand",  nargs = "*", default = None, type = str)
         parser.add_argument("-r", "--remove", dest = "remove", help = "Remove one of the commmands using its index",  nargs = '?', const = 10, type = int)
         parser.add_argument("-p", "--purge", dest = "purge", help = "Purge the list of the most frequently used commands", action = "store_true")
 
-        args = parser.parse_args(sys.argv[2:])
+        args = parser.parse_known_args(sys.argv[2:])[0]
         if args.command:
             cmd = " ".join(args.command)
             addCommand(cmd)
@@ -215,10 +215,10 @@ commands are:
 
         parser = argparse.ArgumentParser(description="The Favorite subcommand allows you to store commands that you use frequently")
 
+        parser.add_argument("-a", "--add", dest = "command", help = "Add a commmand", default = None, type = str)
         parser.add_argument("-l", "--list-commands", dest="listCmds", help = "List a number of the most frequently used commands", nargs = '?', const = 10, type = int)
         parser.add_argument("-s", "--select", dest="select", help = "Select an index of the command that you want to copy",  nargs = '?', const = 10, type = int)
         parser.add_argument("-sp", "--swap", dest="swap", help = "Select an index of the two commands that you want to swap",  nargs = 2, const = None, type = int)
-        parser.add_argument("-a", "--add", dest = "command", help = "Add a commmand", default = None, type = str)
         parser.add_argument("-r", "--remove", dest = "remove", help = "Remove one of the commmands using its index", action = "store_true")
         parser.add_argument("-p", "--purge", dest = "purge", help = "Purge the list of the most frequently used commands", action = "store_true")
 

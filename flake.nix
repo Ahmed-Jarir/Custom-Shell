@@ -14,6 +14,7 @@
           pahole
           python310
           python310Packages.pyperclip
+          graphviz
         ];
       };
     });

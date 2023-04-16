@@ -237,7 +237,6 @@ int parse_command(char *buf, struct command_t *command) {
 
 int process_command(struct command_t *command) {
     int r;
-
     if (strcmp(command->name, "") == 0) {
         return SUCCESS;
     }
@@ -261,6 +260,25 @@ int process_command(struct command_t *command) {
             return SUCCESS;
         }
     }
+    int fileDesc = -1;
+    // creates backup of stdout and stdin for restoration
+    int stdoutCpy = dup(STDOUT_FILENO);
+    int stdinCpy = dup(STDIN_FILENO);
+    FILE *fil;
+    // flags for the corresponding redirects
+    char* flags[3] = {"r", "w", "a"};
+    for (int i = 0; i < 3; i++) {
+        // check if the redirect is not empty
+        if (command->redirects[i]){
+            // opens a file with the corresponding flag
+            fil = fopen(command->redirects[i], flags[i]);
+            // gets the file descriptor
+            fileDesc = fileno(fil);
+            if(fileDesc < 0) printf("error opening the file\n");
+            dup2(fileDesc, i == 0 ? STDIN_FILENO : STDOUT_FILENO);
+        }
+    }
+
 
     if (!strcmp(command->name, "cdh")) {
         // add comments
@@ -329,32 +347,24 @@ int process_command(struct command_t *command) {
     }
 
     if (!strcmp(command->name, "psvis")) {
-        int pid = atoi(command->args[1]);
-        psvis(pid);
+
+
+        if(command->arg_count > 2) {
+            int pid = atoi(command->args[1]);
+            char* outputfile =command->args[2];
+            psvis(pid, outputfile);
+        } else {
+            printf("invalid number of arguments\n");
+        }
         return SUCCESS;
     }
+
     if (!strcmp(command->name, "cu")) {
         runCmdUt(command);
+        return SUCCESS;
     }
 
-    int fileDesc = -1;
-    // creates backup of stdout and stdin for restoration
-    int stdoutCpy = dup(STDOUT_FILENO);
-    int stdinCpy = dup(STDIN_FILENO);
-    FILE *fil;
-    // flags for the corresponding redirects
-    char* flags[3] = {"r", "w", "a"};
-    for (int i = 0; i < 3; i++) {
-        // check if the redirect is not empty
-        if (command->redirects[i]){
-            // opens a file with the corresponding flag
-            fil = fopen(command->redirects[i], flags[i]);
-            // gets the file descriptor
-            fileDesc = fileno(fil);
-            if(fileDesc < 0) printf("error opening the file\n");
-            dup2(fileDesc, i == 0 ? STDIN_FILENO : STDOUT_FILENO);
-        }
-    }
+
     pid_t pid = fork();
     // child
     if (pid == 0) {
@@ -369,17 +379,16 @@ int process_command(struct command_t *command) {
             }
 
             execv(path, args);
+        } else {
             exit(1);
-
         }
         /* execvp(command->name, command->args); // exec+args+path */
         exit(0);
     } else {
         // waits for the the child process if its not supposed to be in the background
+        int status;
         if (!command->background) {
-            int status;
             waitpid(pid, &status, 0); // wait for child process to finish
-            printf("status: %d",status);
         }
         // restores stdout and stdin and closes the opened file descriptor
         if(fileDesc > 0) {
@@ -388,7 +397,9 @@ int process_command(struct command_t *command) {
             dup2(stdinCpy, 0);
         }
 
-        return SUCCESS;
+        if(!status) {
+            return SUCCESS;
+        }
     }
 
     // TODO: your implementation here

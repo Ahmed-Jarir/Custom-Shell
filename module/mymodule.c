@@ -19,7 +19,7 @@ struct my_struct {
     int process_pid;
     int parent_pid;
     unsigned long creation_time;
-    int eldest_child_pid;
+    int eldest_child;
     int num_of_nodes;
     int number_of_children;
 };
@@ -29,6 +29,7 @@ struct node {
     int parent_pid;
     unsigned long creation_time;
     int eldest_child_index;
+    int eldest_child;
     int number_of_children;
     struct node **children;
 };
@@ -53,8 +54,8 @@ struct node* get_children_of_process(int Pid)
     struct node *parent = NULL;
     int num_of_children = 0;
     int i;
+    int first_child = 1;
 
-    printk(KERN_INFO "process found with PID: %d\n", Pid);
     // find the task_struct associated with the given PID
     task = pid_task(find_vpid(Pid), PIDTYPE_PID);
 
@@ -77,6 +78,7 @@ struct node* get_children_of_process(int Pid)
     // initialize the parent node
     parent->process_pid = Pid;
     parent->parent_pid = -1;
+    parent->eldest_child = 0;
     parent->eldest_child_index = 0;
     parent->creation_time = task->start_time;
     parent->number_of_children = num_of_children;
@@ -94,21 +96,32 @@ struct node* get_children_of_process(int Pid)
     i = 0;
     list_for_each_entry(child, &task->children, sibling) {
 
-        if(num_of_children != 0) {
-            struct node *child_node = get_children_of_process(child->pid);
-            if (child_node == NULL) {
-                // Free the parent node and return NULL on error
-                kfree(parent->children);
-                kfree(parent);
-                return NULL;
-            }
-
-            child_node->parent_pid = Pid;
-            parent->children[i] = child_node;
+        struct node *child_node = get_children_of_process(child->pid);
+        if (child_node == NULL) {
+            // Free the parent node and return NULL on error
+            kfree(parent->children);
+            kfree(parent);
+            return NULL;
         }
-        if(parent->children[i]->creation_time < parent->children[parent->eldest_child_index]->creation_time){
+
+        child_node->parent_pid = Pid;
+        parent->children[i] = child_node;
+        if(first_child) {
+            parent->children[i]->eldest_child = 1;
+            parent->eldest_child_index = i;
+            first_child = 0;
+        } else if(parent->children[i]->creation_time < parent->children[parent->eldest_child_index]->creation_time) {
+            parent->children[parent->eldest_child_index]->eldest_child = 0;
+            parent->children[i]->eldest_child = 1;
             parent->eldest_child_index = i;
         }
+        /* if(parent->children[i]->creation_time <= parent->children[parent->eldest_child_index]->creation_time){ */
+        /*     parent->children[parent->eldest_child_index]->eldest_child = 0; */
+        /*     parent->children[i]->eldest_child = 1; */
+        /*     parent->eldest_child_index = i; */
+        /* } else { */
+
+        /* } */
         num_of_nodes++; 
         i++;
     }
@@ -126,7 +139,7 @@ void sendTree(struct node* tree) {
     data.parent_pid = tree->parent_pid;
     data.creation_time = tree->creation_time;
     data.number_of_children = tree->number_of_children;
-    data.eldest_child_pid = tree->number_of_children == 0 ? -1 : tree->children[tree->eldest_child_index]->process_pid;
+    data.eldest_child = tree->eldest_child;
     data.num_of_nodes = num_of_nodes;
 
     skb_out = nlmsg_new(sizeof(data), 0);
@@ -157,7 +170,7 @@ void sendTree(struct node* tree) {
 
 }
 void printTree(struct node* tree) {
-    printk(KERN_INFO "pid: %d, ppid: %d, creation_time: %lu, eldest child: %d\n", tree->process_pid, tree->parent_pid, tree->creation_time, tree->number_of_children == 0 ? 0 : tree->children[tree->eldest_child_index]->process_pid);
+    printk(KERN_INFO "pid: %d, ppid: %d, creation_time: %lu, eldest child: %d\n", tree->process_pid, tree->parent_pid, tree->creation_time, tree->eldest_child);
     if(tree->number_of_children == 0) {
         return;
     }
@@ -178,6 +191,7 @@ static void send_to_userspace(struct timer_list *t) {
     num_of_nodes = 1;
     tree = get_children_of_process(PID);
     sendTree(tree);
+    // uncommment to check tree structure in kernel
     /* printTree(tree); */
 
 }

@@ -18,7 +18,7 @@ int main() {
         code = process_command(command);
         if (code == EXIT) {
             break;
-        } else {
+        } else if (code == SUCCESS){
             if(fork() == 0){
                 char *file = find_file("src/cmdut.py");
                 char cmd[1000];

@@ -55,8 +55,10 @@ dkms.conf
 .vscode/
 .idea/
 *~
+.ccls-cache
 
 # OS Stuff
 .DS_Store
 Thumbs.db
 *.log
+.direnv

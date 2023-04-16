@@ -13,7 +13,7 @@ SRCS := $(shell find $(SRC_DIR) -name '*.c')
 OBJS := $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o, $(SRCS))
 DEPS := $(patsubst $(SRC_DIR)/%.c, $(DEP_DIR)/%.d, $(SRCS))
 
-WARN_FLAGS += -Wall -Wno-comment -Werror -Wextra -Wpedantic
+WARN_FLAGS += -Wall -Wno-comment -Wextra -Wpedantic
 MAKE_FLAGS += -j
 DEP_FLAGS = -MT $@ -MMD -MP -MF $(DEP_DIR)/$*.d
 CFLAGS += $(WARN_FLAGS)

@@ -9,13 +9,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
-#include <termios.h> // termios, TCSANOW, ECHO, ICANON
+#include <termios.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <regex.h>
 #include <fcntl.h>
 #include <graphviz/cgraph.h>
 #include <time.h>
+
 const char *sysname = "mishell";
 
 enum return_codes {
@@ -32,6 +33,7 @@ struct command_t {
     char **args;
     char *redirects[3]; // in/out redirection
     struct command_t *next; // for piping
-    char* full_command;
+    char* full_command; // this was added so that the custom command can easily access the full command and store it 
+                        // it was not used anywhere else
 };
 #endif

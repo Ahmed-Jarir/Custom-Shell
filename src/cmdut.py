@@ -61,7 +61,6 @@ commands are:
 
         # adds a command to the list of command and if it exists it increases the usage
         def addCommand(command):
-            print(command)
             with open(pathToJson, "r") as r:
                 data = json.load(r)
             data[command] = 1 if command not in data.keys() else data[command] + 1

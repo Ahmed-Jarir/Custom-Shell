@@ -5,6 +5,7 @@
 
 #define NETLINK_USER 31
 
+// structure that we use to store our response from the kernel module
 struct my_struct {
     int process_pid;
     int parent_pid;
@@ -14,6 +15,7 @@ struct my_struct {
     int number_of_children;
 };
 
+// creates node of the tree
 void add_nodes(struct my_struct *nodes, int num_nodes, Agraph_t *graph) {
     for (int i = 0; i < num_nodes; ++i) {
         char label[256];
@@ -26,6 +28,7 @@ void add_nodes(struct my_struct *nodes, int num_nodes, Agraph_t *graph) {
     }
 }
 
+// adds edges between the nodes of the tree 
 void add_edges(struct my_struct *nodes, int num_nodes, Agraph_t *graph) {
     for (int i = 0; i < num_nodes; ++i) {
         char parent_label[256], child_label[256];
@@ -49,7 +52,6 @@ void add_edges(struct my_struct *nodes, int num_nodes, Agraph_t *graph) {
                     continue;
                 }
 
-                /* printf("Creating edge between parent: %s and child: %s\n", parent_label, child_label); */
                 Agedge_t *edge = agedge(graph, parent_node, child_node, 0, 1);
 
                 if (edge == NULL) {
@@ -59,6 +61,7 @@ void add_edges(struct my_struct *nodes, int num_nodes, Agraph_t *graph) {
         }
     }
 }
+// fetches the data from the kernel
 int getdata(char* outputfile) {
 
     int sock_fd;
@@ -101,7 +104,7 @@ int getdata(char* outputfile) {
     printf("Waiting for message from kernel...\n");
 
 
-    struct my_struct nodes[1024]; // Arbitrarily large size to hold the received nodes
+    struct my_struct nodes[1024];
     int node_count = 0;
 
     while (1) {
@@ -130,19 +133,30 @@ int getdata(char* outputfile) {
 
     add_edges(nodes, node_count, graph);
 
+    // opens a dot file which is the file format that graphviz uses
     FILE *output = fopen("output.dot", "w");
+    // writes the data from the graph created above into the dot file
     agwrite(graph, output);
 
     fclose(output);
 
     agclose(graph);
     char cmd[strlen(outputfile) + 35];
+    // creates a command to dump the dot file data into a png file with the name given from the arguments
     sprintf(cmd,"dot -Tpng output.dot -o %s.png",outputfile);
-    system(cmd);
-    system("rm output.dot");
+    // runs the command
+    if(system(cmd)) {
+        return 1;
+    }
+    // removes the dot file after getting the png file
+    if(system("rm output.dot")) {
+        return 1;
+    }
 
     return 0;
 }
+// loads the module using insmod 
+// Note: the kernel module has to be compiled
 int load_module(char* module_path, int pid)
 {
     if (system(NULL) == 0) {
@@ -157,12 +171,10 @@ int load_module(char* module_path, int pid)
     if (result != 0) {
         return 1;
     }
-    /* else { */
-    /*     printf("Kernel module loaded successfully\n"); */
-    /* } */
 
     return 0;
 }
+// unloads the module
 int unload_module(const char* module_name) {
     if (system(NULL) == 0) {
         fprintf(stderr, "No shell is available to execute the command\n");
@@ -180,29 +192,14 @@ int unload_module(const char* module_name) {
     return 0;
 }
 
-/* void printTree(struct node* tree) { */
-/*     printf("pid: %d, ppid: %d, creation_time: %lu, eldest child: %d\n", tree->process_pid, tree->parent_pid, tree->creation_time, tree->number_of_children == 0 ? 0 : tree->children[tree->eldest_child_pid]->process_pid); */
-/*     if(tree->number_of_children == 0) { */
-/*         return; */
-/*     } */
-/*     for (int i = 0; i < tree->number_of_children; i++){ */
-/*         printTree(tree->children[i]); */
-/*     } */
-
-/* } */
-
 int psvis(int pid, char* outputfile) {
+    // the relative path of the compiled module relative to our project directory 
     const char* mod_file = "module/mymodule.ko";
+    // name of the module to unload it
     const char* mod_name = "mymodule";
-    /* struct node* tree = (struct node*)malloc(sizeof(struct node)); // Allocate memory for node */
-    /* if (tree == NULL) { */
-    /*     fprintf(stderr, "Failed to allocate memory for node\n"); */
-    /*     return 1; */
-    /* } */
+
     char* module_path = find_file(mod_file);
     if (load_module(module_path, pid)) return 1;
-
-    
     
     int code = getdata(outputfile);
 

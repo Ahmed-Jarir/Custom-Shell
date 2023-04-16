@@ -99,6 +99,8 @@ int parse_command(char *buf, struct command_t *command) {
         command->background = true;
     }
 
+    // sets full command to the command entered in the buffer 
+    // this is used for the cmdut tracking only
     command->full_command = (char *)malloc(sizeof(char));
     command->full_command = strdup(buf);
 
@@ -193,6 +195,9 @@ int parse_command(char *buf, struct command_t *command) {
         }
 
         if (redirect_index != -1) {
+            // checks for white space and sets a flag with the redirect index
+            // so that when it finds a valid argument it places it in the redirects array 
+            // and the flag is then reset
             if(!(arg + 1)[0]) {
                 skipWhiteSpace = redirect_index;
                 continue;
@@ -248,15 +253,16 @@ int process_command(struct command_t *command) {
     }
 
     if (strcmp(command->name, "cd") == 0) {
-        // add comments
         if (command->arg_count > 0) {
             char pwd[1024];
+            // gets the current working the directory
             getcwd(pwd, sizeof(pwd));
             r = chdir(command->args[1]);
             if (r == -1) {
                 printf("-%s: %s: %s\n", sysname, command->name,
                        strerror(errno));
             } 
+            // if chdir doesnt fail it saves the previous working directory
             else saveCdh(pwd);
 
             return SUCCESS;
@@ -283,9 +289,13 @@ int process_command(struct command_t *command) {
 
 
     if (!strcmp(command->name, "cdh")) {
-        // add comments
+        //  calls the Cdh function to get the path 
+        //  chosen by the user
         char* path = Cdh();
+        // if a path was not selected it returns 
+        // success so it basically skips the rest of the command logic
         if (!path) return SUCCESS;
+        // if the path is valid the user is then sent there
         r = chdir(path);
         if (r == -1) {
             printf("-%s: %s: %s\n", sysname, command->name,
@@ -312,14 +322,27 @@ int process_command(struct command_t *command) {
 	}
     if (!strcmp(command->name, "cloc")) {
         char buff[100];
-        getcwd(buff, sizeof(buff));
+        if (getcwd(buff, sizeof(buff)) == NULL){
+            // if function fails command is terminated
+            return SUCCESS;
+        }
+        // gets the first argument
         char* arg = command->args[1];
+        // if the argument is null then the directory 
+        // is set to the current directory
+        // this is different from the normal cloc but 
+        // we wanted to add it as an additional feature
+        // as it makes life easier
         if(!arg){
             arg = ".";
         }
 
+        // memory for the path is allocated 
         char *path = (char* )malloc(strlen(buff) + strlen(arg) + 2);
+        // path is concatinated
         sprintf(path, "%s/%s", buff, arg);
+        // path is sent to the handleFiles function 
+        // to handle the counting and the printing
         handleFiles(path);
         return SUCCESS;
 
@@ -328,8 +351,12 @@ int process_command(struct command_t *command) {
     if (!strcmp(command->name, "psvis")) {
 
 
+        // we check if we have more than 3 arguments
         if(command->arg_count > 2) {
+            // we get the pid from the second one 
             int pid = atoi(command->args[1]);
+            // we get the output file from the second one
+            // the extension is added later
             char* outputfile =command->args[2];
             psvis(pid, outputfile);
         } else {
@@ -372,6 +399,7 @@ int process_command(struct command_t *command) {
         char* path = getBinPath(command->name);
         if (path != NULL){
             char* args[command->arg_count + 2];
+            // creates new args array with the absolute path to the binary instead of the name
             args[0] = path;
             int i;
             for(i = 1; i < command->arg_count ; i++){
@@ -397,13 +425,14 @@ int process_command(struct command_t *command) {
             dup2(stdinCpy, 0);
         }
 
+        // checks if the command exists and if it doesnt it allows the parent to
+        // get to the error printing part
         if(!status) {
             return SUCCESS;
         }
     }
 
-    // TODO: your implementation here
-
+    // reaching this part is implemented above
     printf("-%s: %s: command not found\n", sysname, command->name);
     return UNKNOWN;
 }

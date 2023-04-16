@@ -17,7 +17,10 @@ void runCmdUt(struct command_t *command){
         i++;
     }
 
-    system(cmd);
+    // calls the command from the shell using the system function
+    if (system(cmd)){
+        return;
+    }
 }
 
 

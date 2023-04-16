@@ -291,46 +291,23 @@ int process_command(struct command_t *command) {
         }
         return SUCCESS;
     }
-    if (!strcmp(command->name, "roll")) {
-        // add comments
-        char* argTok;
+    if (strcmp(command->name, "roll") == 0) {
 
-        argTok = strtok(command->args[1], "d");
+		int code;
+		if (command->arg_count > 2) {
+		
+			code = dice_roll(command);
 
-        int numberOfRolls;
-        int maxOut;
+			// invalid format printing
+			if (code == EXIT) {
+				printf("Invlaid format for roll command\n");
+			}
+			return SUCCESS;
+		} else {
+			printf("Invlaid format for roll command\n");
+		}
 
-        int args[2] = {0, 0};
-        int i = 0;
-        while( argTok != NULL  && i < 2) {
-            args[i] = atoi(argTok);
-
-            i++;
-            argTok = strtok(NULL, "d");
-        }
-
-        numberOfRolls = i < 2 ? 1 : args[0];
-        maxOut = args[i == 1?  0 : 1] + 1;
-
-        char *printRolls = (char* )malloc(numberOfRolls * 3);
-        int rollOut[numberOfRolls];
-        int sum = 0;
-        for (int j = 0; j < numberOfRolls; j++){
-
-            rollOut[j] = rand() % maxOut;
-            j == 0 ? sprintf(printRolls, "%d", rollOut[j]) :sprintf(printRolls, "%s + %d", strdup(printRolls), rollOut[j]);
-            sum += rollOut[j];
-
-        }
-        if(numberOfRolls == 1)
-        {
-            printf("Rolled %d\n", sum);
-        }else {
-            printf("Rolled %d (%s)\n", sum, printRolls);
-        }
-        return SUCCESS;
-
-    }
+	}
     if (!strcmp(command->name, "cloc")) {
         char buff[100];
         getcwd(buff, sizeof(buff));
@@ -363,6 +340,25 @@ int process_command(struct command_t *command) {
         runCmdUt(command);
         return SUCCESS;
     }
+
+    if (strcmp(command->name, "zacalc") == 0) {
+
+		const char* file_path = find_file("src/calc.py");
+		
+		char com[256];
+    	snprintf(com, sizeof(com), "python %s", file_path);
+
+		// Execute the Python script
+		int result = system(com);
+
+		// Check the return value of the system() function
+		if (result == -1) {
+			printf("Failed to execute ZaCalc.\n");
+		} else {
+			printf("May ZaCalc be with you.\n");
+		}
+
+	}
 
 
     pid_t pid = fork();

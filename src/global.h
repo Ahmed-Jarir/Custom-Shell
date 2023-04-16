@@ -15,6 +15,7 @@
 #include <regex.h>
 #include <fcntl.h>
 #include <graphviz/cgraph.h>
+#include <time.h>
 const char *sysname = "mishell";
 
 enum return_codes {

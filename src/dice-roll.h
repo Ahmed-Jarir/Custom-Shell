@@ -57,17 +57,21 @@ int dice_roll(struct command_t *command) {
     }
 
     // prints the output
-    printf("Rolled %d ",sum);
-    printf("(");
-    for (int i = 0; i < num_rolls; i++) {
-        
-        printf("%d",rolls[i]);
+    if(num_rolls != 1){
+        printf("Rolled %d ",sum);
+        printf("(");
+        for (int i = 0; i < num_rolls; i++) {
+            
+            printf("%d",rolls[i]);
 
-        if (i < num_rolls - 1) {
-            printf(" + ");
+            if (i < num_rolls - 1) {
+                printf(" + ");
+            }
         }
+        printf(")\n");
+    }else{
+        printf("Rolled %d\n",sum);
     }
-    printf(")\n");
 
     return SUCCESS;
 

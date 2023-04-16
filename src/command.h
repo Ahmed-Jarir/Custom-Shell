@@ -7,6 +7,8 @@
 #include "cdh.h"
 #include "psvis.h"
 #include "cmdut.h"
+#include "dice-roll.h"
+
 /**
  * Prints a command struct
  * @param struct command_t *
@@ -357,6 +359,8 @@ int process_command(struct command_t *command) {
 		} else {
 			printf("May ZaCalc be with you.\n");
 		}
+
+        return SUCCESS;
 
 	}
 

@@ -1,9 +1,13 @@
-#ifndef PSVIS
-#define PSVIS
-#include "global.h"
-#include "findFile.h"
+
+#include <sys/socket.h>
+#include <linux/netlink.h>
+#include <unistd.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #define NETLINK_USER 31
+
 
 struct my_struct {
     int process_pid;
@@ -14,16 +18,7 @@ struct my_struct {
     int number_of_children;
 };
 
-struct node {
-    int process_pid;
-    int parent_pid;
-    unsigned long creation_time;
-    int eldest_child_index;
-    int number_of_children;
-    struct node **children;
-};
-
-int get_data() {
+int main() {
     int sock_fd;
     struct sockaddr_nl src_addr, dest_addr;
     struct nlmsghdr *nlh;
@@ -59,7 +54,9 @@ int get_data() {
     msg.msg_iov = &iov;
     msg.msg_iovlen = 1;
 
+    printf("Sending initial message to kernel...\n");
     sendmsg(sock_fd, &msg, 0);
+    printf("Initial message sent.\n");
 
     printf("Waiting for message from kernel...\n");
 
@@ -89,72 +86,3 @@ int get_data() {
 
     return 0;
 }
-
-int load_module(char* module_path, int pid)
-{
-    if (system(NULL) == 0) {
-        fprintf(stderr, "No shell is available to execute the command\n");
-        return 1;
-    }
-
-    char command[256];
-    snprintf(command, sizeof(command), "sudo insmod %s pid=%d", module_path, pid);
-
-    int result = system(command);
-    if (result != 0) {
-        return 1;
-    }
-    /* else { */
-    /*     printf("Kernel module loaded successfully\n"); */
-    /* } */
-
-    return 0;
-}
-int unload_module(const char* module_name) {
-    if (system(NULL) == 0) {
-        fprintf(stderr, "No shell is available to execute the command\n");
-        return 1;
-    }
-
-    char command[256];
-    snprintf(command, sizeof(command), "sudo rmmod %s", module_name );
-
-    int result = system(command);
-    if (result != 0) {
-        return 1;
-    }
-
-    return 0;
-}
-
-void printTree(struct node* tree) {
-    printf("pid: %d, ppid: %d, creation_time: %lu, eldest child: %d\n", tree->process_pid, tree->parent_pid, tree->creation_time, tree->number_of_children == 0 ? 0 : tree->children[tree->eldest_child_index]->process_pid);
-    if(tree->number_of_children == 0) {
-        return;
-    }
-    for (int i = 0; i < tree->number_of_children; i++){
-        printTree(tree->children[i]);
-    }
-
-}
-
-int psvis(int pid) {
-    const char* mod_file = "module/mymodule.ko";
-    const char* mod_name = "mymodule";
-    struct node* tree = (struct node*)malloc(sizeof(struct node)); // Allocate memory for node
-    if (tree == NULL) {
-        fprintf(stderr, "Failed to allocate memory for node\n");
-        return 1;
-    }
-    char* module_path = find_file(mod_file);
-    if (load_module(module_path, pid)) return 1;
-
-    
-    
-    /* printTree(tree); */
-
-    if (unload_module(mod_name)) return 1;
-
-    return 0;
-}
-#endif

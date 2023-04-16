@@ -22,8 +22,8 @@ int main() {
             if(fork() == 0){
                 char *file = find_file("src/cmdut.py");
                 char cmd[1000];
-                snprintf(cmd, sizeof(cmd), "python %s mostfreq -a \"%s\"",file, command->full_command);
-                if (system(cmd)){
+                snprintf(cmd, sizeof(cmd), "python %s m -a \"%s\"",file, command->full_command);
+                if (system(cmd)) {
                     printf("system call failed");
                     exit(1);
                 }

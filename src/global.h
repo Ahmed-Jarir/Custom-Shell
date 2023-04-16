@@ -1,5 +1,8 @@
 #ifndef GLOB
 #define GLOB
+
+#include <sys/socket.h>
+#include <linux/netlink.h>
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -10,7 +13,7 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <regex.h>
-
+#include <fcntl.h>
 const char *sysname = "mishell";
 
 enum return_codes {
